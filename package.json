@@ -1,0 +1,25 @@
+{
+  "name": "mongres",
+  "version": "0.0.1",
+  "description": "ORM",
+  "main": "src/index.js",
+  "scripts": {
+    "lint": "eslint -c .eslintrc src/**/*.js",
+    "nsp": "nsp check",
+    "police": "police -l",
+    "posttest": "npm run lint",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "orm",
+    "relational",
+    "sql"
+  ],
+  "author": "Dave Kelly",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "4.19.1",
+    "nsp": "3.2.1",
+    "police": "0.4.0"
+  }
+}
