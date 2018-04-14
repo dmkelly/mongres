@@ -7,12 +7,12 @@
   },
   "main": "src/index.js",
   "scripts": {
-    "lint": "eslint -c .eslintrc src/**/*.js",
+    "lint": "eslint -c .eslintrc src/**/*.js && eslint -c test/.eslintrc test/**/*.js ",
     "nsp": "nsp check",
     "police": "police -l",
     "posttest": "npm run lint",
     "setup": "bash test/setup.bash",
-    "test": "NODE_ENV=test mocha --opts ./test/test.opts test"
+    "test": "NODE_ENV=test mocha --opts ./test/test.opts test/tests"
   },
   "keywords": [
     "orm",
