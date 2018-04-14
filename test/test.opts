@@ -1,0 +1,9 @@
+--check-leaks
+--colors
+--inline-diffs
+--recursive
+--reporter spec
+--slow 20
+--throw-deprecation
+--ui bdd
+--require ./test/fixtures
