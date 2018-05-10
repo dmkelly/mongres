@@ -1,6 +1,7 @@
 const knex = require('knex');
 const Model = require('./model');
 const Schema = require('./schema');
+const { createTables } = require('./lib/tables');
 const { modelFactory } = require('./factory');
 
 function createModel (instance, name, schema) {
@@ -17,11 +18,12 @@ class Mongres {
     this.client = null;
     this.Schema = Schema;
     this.models = new Map();
+    this.namespace = 'public';
   }
 
   connect (connectionInfo) {
     this.client = knex(connectionInfo);
-    return Promise.resolve();
+    return createTables(this);
   }
 
   disconnect () {

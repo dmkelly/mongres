@@ -1,5 +1,6 @@
 const Model = require('./model');
 const { isUndefined } = require('./utils');
+const { sanitizeName } = require('./lib/tables');
 
 function modelFactory (instance, name, schema) {
   class Item extends Model {
@@ -9,11 +10,14 @@ function modelFactory (instance, name, schema) {
       const [data] = args;
 
       this.instance = instance;
-      this.name = name;
       this.schema = schema;
       this.data = this.schema.cast(data);
     }
   }
+
+  Item.tableName = sanitizeName(name);
+  Item.schema = schema;
+  Item.prototype.Model = Item;
 
   const properties = Object.keys(schema.fields);
   properties.forEach((fieldName) => {

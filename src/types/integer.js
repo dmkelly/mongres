@@ -13,6 +13,10 @@ class Integer extends Type {
     }
     return integer;
   }
+
+  defineColumn (table, columnName) {
+    return table.integer(columnName);
+  }
 }
 
 module.exports = Integer;

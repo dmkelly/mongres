@@ -1,3 +1,4 @@
 module.exports = {
-  connectionInfo: require('./connectionInfo')
+  connectionInfo: require('./connectionInfo'),
+  table: require('./table')
 };

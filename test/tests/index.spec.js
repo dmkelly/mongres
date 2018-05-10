@@ -4,8 +4,16 @@ const { Model, Mongres, Schema } = require('../../src');
 describe('Mongres', () => {
   let mongres;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await helpers.table.dropTables();
+
+    const schema = new Schema({
+      testField: {
+        type: Schema.Types.Integer()
+      }
+    });
     mongres = new Mongres();
+    mongres.model('ConnectTest', schema);
   });
 
   describe('#connect()', () => {
@@ -13,12 +21,20 @@ describe('Mongres', () => {
       return mongres.disconnect();
     });
 
-    it('Connects to a database', () => {
-      return mongres.connect(helpers.connectionInfo)
-        .then(() => mongres.client.raw('select current_time'))
-        .then((result) => {
-          expect(result.rowCount).to.equal(1);
-        });
+    it('Connects to a database', async () => {
+      await mongres.connect(helpers.connectionInfo);
+      const result = await mongres.client.raw('select current_time');
+      expect(result.rowCount).to.equal(1);
+    });
+
+    it('Creates tables for each model', async () => {
+      const queryString = 'SELECT tablename FROM pg_catalog.pg_tables' +
+        ` WHERE schemaname='${mongres.namespace}'`;
+
+      await mongres.connect(helpers.connectionInfo);
+      const result = await mongres.client.raw(queryString);
+      expect(result.rowCount).to.equal(1);
+      expect(result.rows[0].tablename).to.equal('connecttest');
     });
   });
 
