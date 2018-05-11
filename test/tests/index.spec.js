@@ -36,6 +36,12 @@ describe('Mongres', () => {
       expect(result.rowCount).to.equal(1);
       expect(result.rows[0].tablename).to.equal('connecttest');
     });
+
+    it('Handles reconnections', async () => {
+      await mongres.connect(helpers.connectionInfo);
+      await mongres.disconnect();
+      await mongres.connect(helpers.connectionInfo);
+    });
   });
 
   describe('#model()', () => {

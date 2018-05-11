@@ -22,9 +22,13 @@ async function createTable (instance, Model) {
   const dbSchema = instance.namespace
     ? instance.client.schema.withSchema(instance.namespace)
     : instance.client.schema;
-  await dbSchema.createTable(Model.tableName, function (table) {
-    defineTable(table, Model.schema);
-  });
+  const tableExists = await dbSchema.hasTable(Model.tableName);
+
+  if (!tableExists) {
+    await dbSchema.createTable(Model.tableName, function (table) {
+      defineTable(table, Model.schema);
+    });
+  }
 }
 
 async function createTables (instance) {
