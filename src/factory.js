@@ -1,6 +1,19 @@
 const Model = require('./model');
+const Types = require('./types');
 const { isUndefined } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
+
+function attachCore (Model, instance) {
+  Model.instance = instance;
+
+  Model.update = async function (filters, changes) {
+    const client = instance.client;
+    const results = await client.table(Model.tableName).update(changes);
+    return {
+      nModified: results
+    };
+  };
+}
 
 function attachMethods (Model, schema) {
   Object.entries(schema.methods)
@@ -50,6 +63,12 @@ function modelFactory (instance, name, schema) {
   Item.schema = schema;
   Item.prototype.Model = Item;
 
+  if (!schema.fields.id) {
+    schema.fields.id = {
+      type: Types.Id()
+    };
+  }
+
   const properties = Object.keys(schema.fields);
   properties.forEach((fieldName) => {
     Object.defineProperty(Item.prototype, fieldName, {
@@ -65,6 +84,7 @@ function modelFactory (instance, name, schema) {
     });
   });
 
+  attachCore(Item, instance);
   attachMethods(Item, schema);
   attachStatics(Item, schema);
   attachVirtuals(Item, schema);

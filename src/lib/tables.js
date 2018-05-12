@@ -10,8 +10,6 @@ function defineField (table, fieldName, field) {
 }
 
 function defineTable (table, schema) {
-  table.increments();
-
   Object.entries(schema.fields)
     .forEach(([fieldName, field]) => {
       defineField(table, fieldName, field);
