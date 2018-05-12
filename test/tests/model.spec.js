@@ -130,4 +130,25 @@ describe('Model', () => {
       expect(widget.testMethod(2)).to.equal(7);
     });
   });
+
+  describe('statics', () => {
+    let Widget;
+
+    beforeEach(() => {
+      const schema = new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        }
+      });
+      schema.statics.testStatic = function (amount) {
+        return this.tableName + amount;
+      };
+
+      Widget = mongres.model('Widget', schema);
+    });
+
+    it('Supports attaching static functions to the schema', () => {
+      expect(Widget.testStatic(2)).to.equal('widget2');
+    });
+  });
 });

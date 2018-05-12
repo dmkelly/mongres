@@ -6,6 +6,7 @@ class Schema {
   constructor (fields) {
     this.fields = fields;
     this.methods = {};
+    this.statics = {};
     this.virtuals = new Map();
   }
 

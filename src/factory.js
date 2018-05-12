@@ -9,6 +9,13 @@ function attachMethods (Model, schema) {
     });
 }
 
+function attachStatics (Model, schema) {
+  Object.entries(schema.statics)
+    .forEach(([name, fn]) => {
+      Model[name] = fn;
+    });
+}
+
 function attachVirtuals (Model, schema) {
   for (let virtual of schema.virtuals.values()) {
     Object.defineProperty(Model.prototype, virtual.name, {
@@ -59,6 +66,7 @@ function modelFactory (instance, name, schema) {
   });
 
   attachMethods(Item, schema);
+  attachStatics(Item, schema);
   attachVirtuals(Item, schema);
 
   return Item;
