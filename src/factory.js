@@ -34,6 +34,21 @@ function modelFactory (instance, name, schema) {
     });
   });
 
+  for (let virtual of schema.virtuals.values()) {
+    Object.defineProperty(Item.prototype, virtual.name, {
+      get: function () {
+        if (virtual.getter) {
+          return virtual.getter.call(this);
+        }
+      },
+      set: function (value) {
+        if (virtual.setter) {
+          return virtual.setter.call(this, value);
+        }
+      }
+    });
+  }
+
   return Item;
 }
 
