@@ -106,4 +106,28 @@ describe('Model', () => {
       expect(widget.height).to.equal(5);
     });
   });
+
+  describe('methods', () => {
+    let Widget;
+
+    beforeEach(() => {
+      const schema = new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        }
+      });
+      schema.methods.testMethod = function (amount) {
+        return this.height + amount;
+      };
+
+      Widget = mongres.model('Widget', schema);
+    });
+
+    it('Supports attaching instance methods via the schema', () => {
+      const widget = new Widget({
+        height: 5
+      });
+      expect(widget.testMethod(2)).to.equal(7);
+    });
+  });
 });

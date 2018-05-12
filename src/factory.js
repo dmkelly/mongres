@@ -2,6 +2,30 @@ const Model = require('./model');
 const { isUndefined } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
 
+function attachMethods (Model, schema) {
+  Object.entries(schema.methods)
+    .forEach(([name, fn]) => {
+      Model.prototype[name] = fn;
+    });
+}
+
+function attachVirtuals (Model, schema) {
+  for (let virtual of schema.virtuals.values()) {
+    Object.defineProperty(Model.prototype, virtual.name, {
+      get: function () {
+        if (virtual.getter) {
+          return virtual.getter.call(this);
+        }
+      },
+      set: function (value) {
+        if (virtual.setter) {
+          return virtual.setter.call(this, value);
+        }
+      }
+    });
+  }
+}
+
 function modelFactory (instance, name, schema) {
   class Item extends Model {
     constructor (...args) {
@@ -34,20 +58,8 @@ function modelFactory (instance, name, schema) {
     });
   });
 
-  for (let virtual of schema.virtuals.values()) {
-    Object.defineProperty(Item.prototype, virtual.name, {
-      get: function () {
-        if (virtual.getter) {
-          return virtual.getter.call(this);
-        }
-      },
-      set: function (value) {
-        if (virtual.setter) {
-          return virtual.setter.call(this, value);
-        }
-      }
-    });
-  }
+  attachMethods(Item, schema);
+  attachVirtuals(Item, schema);
 
   return Item;
 }

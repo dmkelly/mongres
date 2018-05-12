@@ -5,6 +5,7 @@ const Virtual = require('./virtual');
 class Schema {
   constructor (fields) {
     this.fields = fields;
+    this.methods = {};
     this.virtuals = new Map();
   }
 
