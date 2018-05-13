@@ -1,7 +1,7 @@
-const helpers = require('../helpers');
-const { Mongres, Schema } = require('../../src');
+const helpers = require('../../helpers');
+const { Mongres, Schema } = require('../../../src');
 
-describe('virtuals', () => {
+describe('model/virtual', () => {
   let mongres;
   let schema;
 

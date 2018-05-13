@@ -1,6 +1,6 @@
-const { Model, Mongres, Schema } = require('../../src');
+const { Model, Mongres, Schema } = require('../../../src');
 
-describe('Model', () => {
+describe('model/core', () => {
   let mongres;
 
   beforeEach(() => {
