@@ -9,6 +9,7 @@ function attachCore (Model, instance) {
   Model.create = async function (data) {
     const client = instance.client;
     const document = new Model(data);
+    await document.validate();
 
     let result;
     try {

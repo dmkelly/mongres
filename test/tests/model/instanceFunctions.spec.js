@@ -4,6 +4,7 @@ const { Mongres, Schema, error } = require('../../../src');
 
 describe('model/instanceFunctions', () => {
   let mongres;
+  let Square;
   let Widget;
   let preSaveMiddleware;
   let postSaveMiddleware;
@@ -18,6 +19,12 @@ describe('model/instanceFunctions', () => {
     const widgetSchema = new Schema({
       height: {
         type: Schema.Types.Integer()
+      }
+    });
+
+    const squareSchema = new Schema({
+      height: {
+        type: Schema.Types.Integer()
       },
       width: {
         required: true,
@@ -28,6 +35,7 @@ describe('model/instanceFunctions', () => {
     widgetSchema.pre('save', preSaveMiddleware);
     widgetSchema.post('save', postSaveMiddleware);
 
+    Square = mongres.model('Square', squareSchema);
     Widget = mongres.model('Widget', widgetSchema);
 
     await mongres.connect(helpers.connectionInfo);
@@ -67,6 +75,16 @@ describe('model/instanceFunctions', () => {
       expect(postSaveMiddleware.called).not.to.be.ok;
       await widget.save();
       expect(postSaveMiddleware.called).to.be.ok;
+    });
+
+    it('Validates before saving', async () => {
+      const square = new Square({
+        height: 5
+      });
+      expect(square.save()).to.be.rejectedWith(error.ValidationError);
+
+      const records = await helpers.query.find(Square.tableName);
+      expect(records.length).to.equal(0);
     });
 
     describe('When the record already exists', () => {
@@ -113,10 +131,10 @@ describe('model/instanceFunctions', () => {
 
   describe('#validate()', () => {
     it('Enforces required fields', () => {
-      const widget = new Widget({
-        height: 'asdf'
+      const square = new Square({
+        height: 5
       });
-      expect(() => widget.validate()).to.throw(error.ValidationError);
+      expect(() => square.validate()).to.throw(error.ValidationError);
     });
   });
 });

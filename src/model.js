@@ -20,6 +20,7 @@ class Model {
   async save () {
     const { pre, post } = this.schema.middleware;
 
+    await this.validate();
     await invokeMiddleware(this, 'save', pre, true);
 
     if (this.isNew) {

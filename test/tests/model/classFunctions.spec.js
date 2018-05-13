@@ -3,12 +3,22 @@ const { error, Mongres, Schema } = require('../../../src');
 
 describe('model/classFunctions', () => {
   let mongres;
+  let Square;
   let Widget;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
+    Square = mongres.model('Square', new Schema({
+      height: {
+        type: Schema.Types.Integer()
+      },
+      width: {
+        required: true,
+        type: Schema.Types.Integer()
+      }
+    }));
     Widget = mongres.model('Widget', new Schema({
       height: {
         type: Schema.Types.Integer()
@@ -37,6 +47,15 @@ describe('model/classFunctions', () => {
       });
       expect(widget).to.be.instanceof(Widget);
       expect(widget.id).to.equal(1);
+    });
+
+    it('Validates before saving', async () => {
+      expect(Square.create({
+        height: 5
+      })).to.be.rejectedWith(error.ValidationError);
+
+      const records = await helpers.query.find(Square.tableName);
+      expect(records.length).to.equal(0);
     });
 
     describe('When there is a conflict', () => {
