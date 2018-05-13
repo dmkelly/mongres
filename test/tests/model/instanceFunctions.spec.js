@@ -35,6 +35,10 @@ describe('model/instanceFunctions', () => {
         type: Schema.Types.Integer()
       },
       width: {
+        validate: {
+          message: 'invalid width: {VALUE}',
+          validator: (value) => value > 0
+        },
         required: true,
         type: Schema.Types.Integer()
       }
@@ -193,6 +197,22 @@ describe('model/instanceFunctions', () => {
         height: 5
       });
       expect(square.validate()).to.be.rejectedWith(error.ValidationError);
+    });
+
+    it('Supports custom validator', () => {
+      const square = new Square({
+        height: 5,
+        width: -1
+      });
+
+      return square.validate()
+        .then(() => {
+          return Promise.reject(new Error('Validation should have rejected'));
+        })
+        .catch((err) => {
+          expect(err).to.be.instanceof(error.ValidationError);
+          expect(err.details[0].message).to.equal('invalid width: -1');
+        });
     });
 
     it('Triggers pre middleware', async () => {

@@ -1,11 +1,11 @@
 const Types = require('./types');
-const { isUndefined } = require('./utils');
+const { isFunction, isUndefined, template } = require('./utils');
 const Middleware = require('./middleware');
 const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
 
 function validateField (fieldName, field, value) {
-  if (value == null) {
+  if (isUndefined(value)) {
     if (field.required) {
       throw new ValidationError(`Field ${fieldName} is required`, {
         field: fieldName
@@ -18,6 +18,19 @@ function validateField (fieldName, field, value) {
       field: fieldName,
       value
     });
+  }
+  if (field.validate && isFunction(field.validate.validator)) {
+    const { message, validator } = field.validate;
+    if (!validator(value)) {
+      const defaultMessage = `Validation failed on ${fieldName}: ${value}`;
+      const messageText = message && template(message, {
+        VALUE: value
+      });
+      throw new ValidationError(messageText || defaultMessage, {
+        field: fieldName,
+        value
+      });
+    }
   }
 }
 
