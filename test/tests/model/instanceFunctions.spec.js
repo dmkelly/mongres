@@ -6,6 +6,8 @@ describe('model/instanceFunctions', () => {
   let mongres;
   let Square;
   let Widget;
+  let preRemoveMiddleware;
+  let postRemoveMiddleware;
   let preSaveMiddleware;
   let postSaveMiddleware;
   let preValidateMiddleware;
@@ -15,6 +17,8 @@ describe('model/instanceFunctions', () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
+    preRemoveMiddleware = sinon.spy();
+    postRemoveMiddleware = sinon.spy();
     preSaveMiddleware = sinon.spy();
     postSaveMiddleware = sinon.spy();
     preValidateMiddleware = sinon.spy();
@@ -36,6 +40,8 @@ describe('model/instanceFunctions', () => {
       }
     });
 
+    widgetSchema.pre('remove', preRemoveMiddleware);
+    widgetSchema.post('remove', postRemoveMiddleware);
     widgetSchema.pre('save', preSaveMiddleware);
     widgetSchema.post('save', postSaveMiddleware);
     widgetSchema.pre('validate', preValidateMiddleware);
@@ -49,6 +55,52 @@ describe('model/instanceFunctions', () => {
 
   afterEach(() => {
     return mongres.disconnect();
+  });
+
+  describe('#remove()', () => {
+    let widgetA;
+    let widgetB;
+
+    beforeEach(async () => {
+      widgetA = new Widget({
+        height: 5
+      });
+      widgetB = new Widget({
+        height: 7
+      });
+      await Promise.all([
+        widgetA.save(),
+        widgetB.save()
+      ]);
+    });
+
+    it('Deletes the document', async () => {
+      await widgetA.remove();
+      const row = await helpers.query.findOne(Widget.tableName, {
+        id: widgetA.id
+      });
+      expect(row).not.to.be.ok;
+    });
+
+    it('Does not delete other documents', async () => {
+      await widgetA.remove();
+      const row = await helpers.query.findOne(Widget.tableName, {
+        id: widgetB.id
+      });
+      expect(row).to.be.ok;
+    });
+
+    it('Triggers pre middleware', async () => {
+      expect(preRemoveMiddleware.called).not.to.be.ok;
+      await widgetA.remove();
+      expect(preRemoveMiddleware.called).to.be.ok;
+    });
+
+    it('Triggers post middleware', async () => {
+      expect(postRemoveMiddleware.called).not.to.be.ok;
+      await widgetA.remove();
+      expect(postRemoveMiddleware.called).to.be.ok;
+    });
   });
 
   describe('#save()', () => {
