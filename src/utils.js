@@ -1,3 +1,12 @@
+const error = require('./error');
+
+function castError (err) {
+  if (err.code === '23505') {
+    return new error.ConflictError(err);
+  }
+  return err;
+}
+
 function invoke (fns) {
   for (let fn of fns) {
     fn();
@@ -24,6 +33,7 @@ function pick (object, keys) {
 }
 
 module.exports = {
+  castError,
   invoke,
   invokeSeries,
   isUndefined,

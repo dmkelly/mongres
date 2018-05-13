@@ -1,5 +1,5 @@
 const helpers = require('../../helpers');
-const { Mongres, Schema } = require('../../../src');
+const { error, Mongres, Schema } = require('../../../src');
 
 describe('model/classFunctions', () => {
   let mongres;
@@ -20,6 +20,41 @@ describe('model/classFunctions', () => {
 
   afterEach(() => {
     return mongres.disconnect();
+  });
+
+  describe('#create()', () => {
+    it('Inserts a new record', async () => {
+      await Widget.create({
+        height: 7
+      });
+      const records = await helpers.query.find(Widget.tableName);
+      expect(records.length).to.equal(1);
+    });
+
+    it('Returns the created document', async () => {
+      const widget = await Widget.create({
+        height: 7
+      });
+      expect(widget).to.be.instanceof(Widget);
+      expect(widget.id).to.equal(1);
+    });
+
+    describe('When there is a conflict', () => {
+      let existing;
+
+      beforeEach(async () => {
+        existing = await Widget.create({
+          height: 7
+        });
+      });
+
+      it('Throws a ConflictError', () => {
+        expect(Widget.create({
+          id: existing.id,
+          height: 2
+        })).to.be.rejectedWith(error.ConflictError);
+      });
+    });
   });
 
   describe('#find()', () => {

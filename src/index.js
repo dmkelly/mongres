@@ -1,4 +1,5 @@
 const knex = require('knex');
+const errors = require('./error');
 const Model = require('./model');
 const Schema = require('./schema');
 const { createTables } = require('./lib/tables');
@@ -44,6 +45,7 @@ class Mongres {
 }
 
 const instance = new Mongres();
+instance.error = errors;
 instance.Model = Model;
 instance.Mongres = Mongres;
 instance.Schema = Schema;

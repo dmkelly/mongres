@@ -1,18 +1,25 @@
 const Model = require('./model');
 const Types = require('./types');
-const { isUndefined, pick } = require('./utils');
+const { castError, isUndefined, pick } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
 
 function attachCore (Model, instance) {
   Model.instance = instance;
 
-  Model.update = async function (filters, changes) {
+  Model.create = async function (data) {
     const client = instance.client;
-    const result = await client.table(Model.tableName)
-      .update(changes);
-    return {
-      nModified: result
-    };
+    const document = new Model(data);
+
+    let result;
+    try {
+      result = await client.table(Model.tableName)
+        .insert(document.data, 'id');
+    } catch (err) {
+      throw castError(err);
+    }
+
+    document.id = result[0];
+    return document;
   };
 
   Model.find = async function (filters = {}) {
@@ -47,6 +54,15 @@ function attachCore (Model, instance) {
     const result = await client.table(Model.tableName)
       .where(filters)
       .del();
+    return {
+      nModified: result
+    };
+  };
+
+  Model.update = async function (filters, changes) {
+    const client = instance.client;
+    const result = await client.table(Model.tableName)
+      .update(changes);
     return {
       nModified: result
     };

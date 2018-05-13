@@ -8,7 +8,7 @@ async function count (tableName, filters = {}) {
   return Number(results[0].count);
 }
 
-async function find (tableName, filters) {
+async function find (tableName, filters = {}) {
   const client = knex(connectionInfo);
   const results = await client(tableName).where(filters);
   await client.destroy();
