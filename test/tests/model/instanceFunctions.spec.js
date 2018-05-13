@@ -1,19 +1,30 @@
+const sinon = require('sinon');
 const helpers = require('../../helpers');
 const { Mongres, Schema } = require('../../../src');
 
 describe('model/instanceFunctions', () => {
   let mongres;
   let Widget;
+  let preSaveMiddleware;
+  let postSaveMiddleware;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
-    Widget = mongres.model('Widget', new Schema({
+    preSaveMiddleware = sinon.spy();
+    postSaveMiddleware = sinon.spy();
+
+    const widgetSchema = new Schema({
       height: {
         type: Schema.Types.Integer()
       }
-    }));
+    });
+
+    widgetSchema.pre('save', preSaveMiddleware);
+    widgetSchema.post('save', postSaveMiddleware);
+
+    Widget = mongres.model('Widget', widgetSchema);
 
     await mongres.connect(helpers.connectionInfo);
   });
@@ -36,6 +47,24 @@ describe('model/instanceFunctions', () => {
       expect(row.id).to.equal(1);
     });
 
+    it('Triggers pre middleware', async () => {
+      const widget = new Widget({
+        height: 5
+      });
+      expect(preSaveMiddleware.called).not.to.be.ok;
+      await widget.save();
+      expect(preSaveMiddleware.called).to.be.ok;
+    });
+
+    it('Triggers post middleware', async () => {
+      const widget = new Widget({
+        height: 5
+      });
+      expect(postSaveMiddleware.called).not.to.be.ok;
+      await widget.save();
+      expect(postSaveMiddleware.called).to.be.ok;
+    });
+
     describe('When the record already exists', () => {
       let widget;
 
@@ -56,6 +85,24 @@ describe('model/instanceFunctions', () => {
         expect(row.height).to.equal(8);
         const count = await helpers.query.count(Widget.tableName);
         expect(count).to.equal(1);
+      });
+
+      it('Triggers pre middleware', async () => {
+        const widget = new Widget({
+          height: 5
+        });
+        expect(preSaveMiddleware.calledOnce).to.be.ok;
+        await widget.save();
+        expect(preSaveMiddleware.calledTwice).to.be.ok;
+      });
+
+      it('Triggers post middleware', async () => {
+        const widget = new Widget({
+          height: 5
+        });
+        expect(postSaveMiddleware.calledOnce).to.be.ok;
+        await widget.save();
+        expect(postSaveMiddleware.calledTwice).to.be.ok;
       });
     });
   });

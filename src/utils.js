@@ -1,3 +1,15 @@
+function invoke (fns) {
+  for (let fn of fns) {
+    fn();
+  }
+}
+
+async function invokeSeries (fns) {
+  for (let fn of fns) {
+    await fn();
+  }
+}
+
 function isUndefined (value) {
   return typeof value === 'undefined';
 }
@@ -12,6 +24,8 @@ function pick (object, keys) {
 }
 
 module.exports = {
+  invoke,
+  invokeSeries,
   isUndefined,
   pick
 };
