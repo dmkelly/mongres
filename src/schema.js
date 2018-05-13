@@ -55,10 +55,12 @@ class Schema {
 
   pre (hook, callback) {
     this.middleware.pre.push(new Middleware(hook, callback));
+    return this;
   }
 
   post (hook, callback) {
     this.middleware.post.push(new Middleware(hook, callback));
+    return this;
   }
 
   validate (data) {
