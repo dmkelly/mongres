@@ -1,6 +1,6 @@
 const Model = require('./model');
 const Types = require('./types');
-const { isUndefined } = require('./utils');
+const { isUndefined, pick } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
 
 function attachCore (Model, instance) {
@@ -8,10 +8,35 @@ function attachCore (Model, instance) {
 
   Model.update = async function (filters, changes) {
     const client = instance.client;
-    const results = await client.table(Model.tableName).update(changes);
+    const results = await client.table(Model.tableName)
+      .update(changes);
     return {
       nModified: results
     };
+  };
+
+  Model.find = async function (filters = {}) {
+    const client = instance.client;
+    const results = await client.table(Model.tableName)
+      .select()
+      .where(pick(filters, Object.keys(Model.schema.fields)));
+    return results.map((record) => new Model(record));
+  };
+
+  Model.findOne = async function (filters = {}) {
+    const client = instance.client;
+    const results = await client.table(Model.tableName)
+      .select()
+      .where(pick(filters, Object.keys(Model.schema.fields)))
+      .limit(1);
+    if (!results.length) {
+      return null;
+    }
+    return new Model(results[0]);
+  };
+
+  Model.findById = function (id) {
+    return Model.findOne({ id });
   };
 }
 
