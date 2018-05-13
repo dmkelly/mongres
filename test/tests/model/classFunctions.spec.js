@@ -115,6 +115,16 @@ describe('model/classFunctions', () => {
       });
       expect(results.length).to.equal(2);
     });
+
+    it('Supports chaining', async () => {
+      const results = await Widget.find()
+        .where({
+          height: 5
+        })
+        .limit(3)
+        .sort('-height');
+      expect(results.length).to.equal(1);
+    });
   });
 
   describe('#findOne()', () => {
@@ -152,6 +162,15 @@ describe('model/classFunctions', () => {
       const result = await Widget.findOne({
         badField: 100
       });
+      expect(result).to.be.instanceof(Widget);
+    });
+
+    it('Supports chaining', async () => {
+      const result = await Widget.findOne()
+        .where({
+          height: 5
+        })
+        .sort('-height');
       expect(result).to.be.instanceof(Widget);
     });
   });

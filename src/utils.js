@@ -1,3 +1,4 @@
+const isNumber = require('is-number');
 const error = require('./error');
 
 function castError (err) {
@@ -27,6 +28,10 @@ function isFunction (value) {
   return typeof value === 'function';
 }
 
+function isString (value) {
+  return typeof value === 'string';
+}
+
 function isUndefined (value) {
   return typeof value === 'undefined';
 }
@@ -41,10 +46,11 @@ function pick (object, keys) {
 }
 
 function template (text, substitutions) {
-  return Object.entries(substitutions).reduce((message, [key, value]) => {
-    const matcher = new RegExp(`\\{${escapeRegExp(key)}\\}`, 'g');
-    return message.replace(matcher, `${value}`);
-  }, text);
+  return Object.entries(substitutions)
+    .reduce((message, [key, value]) => {
+      const matcher = new RegExp(`\\{${escapeRegExp(key)}\\}`, 'g');
+      return message.replace(matcher, `${value}`);
+    }, text);
 }
 
 module.exports = {
@@ -53,6 +59,8 @@ module.exports = {
   invoke,
   invokeSeries,
   isFunction,
+  isNumber,
+  isString,
   isUndefined,
   pick,
   template

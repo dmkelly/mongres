@@ -18,6 +18,36 @@ describe('utils', () => {
     });
   });
 
+  describe('#isNumber()', () => {
+    it('Identifies when a value is a number', () => {
+      expect(utils.isNumber(1)).to.be.ok;
+      expect(utils.isNumber('-5')).to.be.ok;
+    });
+
+    it('Identifies when a value is not a number', () => {
+      expect(utils.isNumber(null)).not.to.be.ok;
+      expect(utils.isNumber('')).not.to.be.ok;
+      expect(utils.isNumber([])).not.to.be.ok;
+      expect(utils.isNumber({})).not.to.be.ok;
+    });
+  });
+
+  describe('#isString()', () => {
+    it('Identifies when a value is a string', () => {
+      expect(utils.isString('')).to.be.ok;
+      expect(utils.isString('test')).to.be.ok;
+    });
+
+    it('Identifies when a value is not a string', () => {
+      expect(utils.isString(null)).not.to.be.ok;
+      expect(utils.isString(0)).not.to.be.ok;
+      expect(utils.isString(true)).not.to.be.ok;
+      expect(utils.isString(false)).not.to.be.ok;
+      expect(utils.isString([])).not.to.be.ok;
+      expect(utils.isString({})).not.to.be.ok;
+    });
+  });
+
   describe('#isUndefined()', () => {
     it('Identifies when a value is undefined', () => {
       expect(utils.isUndefined()).to.be.ok;

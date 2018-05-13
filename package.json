@@ -32,6 +32,7 @@
     "sinon": "5.0.7"
   },
   "dependencies": {
+    "is-number": "6.0.0",
     "knex": "0.14.6"
   }
 }

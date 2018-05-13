@@ -1,6 +1,7 @@
 const Model = require('./model');
+const Query = require('./query');
 const Types = require('./types');
-const { castError, isUndefined, pick } = require('./utils');
+const { castError, isUndefined } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
 
 function attachCore (Model, instance) {
@@ -23,28 +24,19 @@ function attachCore (Model, instance) {
     return document;
   };
 
-  Model.find = async function (filters = {}) {
-    const client = instance.client;
-    const results = await client.table(Model.tableName)
-      .select()
-      .where(pick(filters, Object.keys(Model.schema.fields)));
-    return results.map((record) => new Model(record));
+  Model.find = function (filters = {}) {
+    return new Query(Model, {}).where(filters);
   };
 
-  Model.findOne = async function (filters = {}) {
-    const client = instance.client;
-    const results = await client.table(Model.tableName)
-      .select()
-      .where(pick(filters, Object.keys(Model.schema.fields)))
-      .limit(1);
-    if (!results.length) {
-      return null;
-    }
-    return new Model(results[0]);
+  Model.findOne = function (filters = {}) {
+    return new Query(Model, {
+      single: true
+    })
+      .where(filters);
   };
 
-  Model.findById = function (id) {
-    return Model.findOne({ id });
+  Model.findById = async function (id) {
+    return await Model.findOne({ id });
   };
 
   Model.remove = async function (filters) {
