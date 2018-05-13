@@ -173,4 +173,41 @@ describe('I/O', () => {
       expect(result.id).to.equal(widgetA.id);
     });
   });
+
+  describe('#remove()', () => {
+    beforeEach(() => {
+      return Promise.all([
+        new Widget({
+          height: 5
+        }).save(),
+        new Widget({
+          height: 10
+        }).save()
+      ]);
+    });
+
+    it('Can remove multiple items at once', async () => {
+      await Widget.remove({});
+      const count = await helpers.query.count(Widget.tableName);
+      expect(count).to.equal(0);
+    });
+
+    it('Removes only items matching the filters', async () => {
+      await Widget.remove({
+        height: 10
+      });
+      const count = await helpers.query.count(Widget.tableName);
+      expect(count).to.equal(1);
+
+      const removedItem = await Widget.findOne({
+        height: 10
+      });
+      expect(removedItem).not.to.be.ok;
+
+      const remainingItem = await Widget.findOne({
+        height: 5
+      });
+      expect(remainingItem).to.be.ok;
+    });
+  });
 });

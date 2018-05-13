@@ -8,10 +8,10 @@ function attachCore (Model, instance) {
 
   Model.update = async function (filters, changes) {
     const client = instance.client;
-    const results = await client.table(Model.tableName)
+    const result = await client.table(Model.tableName)
       .update(changes);
     return {
-      nModified: results
+      nModified: result
     };
   };
 
@@ -37,6 +37,19 @@ function attachCore (Model, instance) {
 
   Model.findById = function (id) {
     return Model.findOne({ id });
+  };
+
+  Model.remove = async function (filters) {
+    if (!filters) {
+      throw await new Error('Model.remove() requires conditions');
+    }
+    const client = instance.client;
+    const result = await client.table(Model.tableName)
+      .where(filters)
+      .del();
+    return {
+      nModified: result
+    };
   };
 }
 
