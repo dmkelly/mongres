@@ -1,4 +1,4 @@
-const hooks = ['save'];
+const hooks = ['save', 'validate'];
 
 class Middleware {
   constructor (hook, callback) {

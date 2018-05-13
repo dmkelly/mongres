@@ -8,6 +8,8 @@ describe('model/instanceFunctions', () => {
   let Widget;
   let preSaveMiddleware;
   let postSaveMiddleware;
+  let preValidateMiddleware;
+  let postValidateMiddleware;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
@@ -15,6 +17,8 @@ describe('model/instanceFunctions', () => {
     mongres = new Mongres();
     preSaveMiddleware = sinon.spy();
     postSaveMiddleware = sinon.spy();
+    preValidateMiddleware = sinon.spy();
+    postValidateMiddleware = sinon.spy();
 
     const widgetSchema = new Schema({
       height: {
@@ -34,6 +38,8 @@ describe('model/instanceFunctions', () => {
 
     widgetSchema.pre('save', preSaveMiddleware);
     widgetSchema.post('save', postSaveMiddleware);
+    widgetSchema.pre('validate', preValidateMiddleware);
+    widgetSchema.post('validate', postValidateMiddleware);
 
     Square = mongres.model('Square', squareSchema);
     Widget = mongres.model('Widget', widgetSchema);
@@ -134,7 +140,25 @@ describe('model/instanceFunctions', () => {
       const square = new Square({
         height: 5
       });
-      expect(() => square.validate()).to.throw(error.ValidationError);
+      expect(square.validate()).to.be.rejectedWith(error.ValidationError);
+    });
+
+    it('Triggers pre middleware', async () => {
+      const widget = new Widget({
+        height: 5
+      });
+      expect(preValidateMiddleware.called).not.to.be.ok;
+      await widget.validate();
+      expect(preValidateMiddleware.called).to.be.ok;
+    });
+
+    it('Triggers post middleware', async () => {
+      const widget = new Widget({
+        height: 5
+      });
+      expect(postValidateMiddleware.called).not.to.be.ok;
+      await widget.validate();
+      expect(postValidateMiddleware.called).to.be.ok;
     });
   });
 });

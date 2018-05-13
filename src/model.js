@@ -40,8 +40,11 @@ class Model {
     return this;
   }
 
-  validate () {
+  async validate () {
+    const { pre, post } = this.schema.middleware;
+    await invokeMiddleware(this, 'validate', pre, true);
     this.schema.validate(this.data);
+    invokeMiddleware(this, 'validate', post, false);
   }
 }
 
