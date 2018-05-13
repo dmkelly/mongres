@@ -11,6 +11,9 @@ class Type {
     // http://knexjs.org/#Schema-Building
     return table.string(columnName);
   }
+
+  isValid (/* value */) {
+  }
 }
 
 module.exports = Type;

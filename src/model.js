@@ -38,6 +38,10 @@ class Model {
     invokeMiddleware(this, 'save', post, false);
     return this;
   }
+
+  validate () {
+    this.schema.validate(this.data);
+  }
 }
 
 module.exports = Model;

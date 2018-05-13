@@ -1,6 +1,6 @@
 const sinon = require('sinon');
 const helpers = require('../../helpers');
-const { Mongres, Schema } = require('../../../src');
+const { Mongres, Schema, error } = require('../../../src');
 
 describe('model/instanceFunctions', () => {
   let mongres;
@@ -17,6 +17,10 @@ describe('model/instanceFunctions', () => {
 
     const widgetSchema = new Schema({
       height: {
+        type: Schema.Types.Integer()
+      },
+      width: {
+        required: true,
         type: Schema.Types.Integer()
       }
     });
@@ -104,6 +108,15 @@ describe('model/instanceFunctions', () => {
         await widget.save();
         expect(postSaveMiddleware.calledTwice).to.be.ok;
       });
+    });
+  });
+
+  describe('#validate()', () => {
+    it('Enforces required fields', () => {
+      const widget = new Widget({
+        height: 'asdf'
+      });
+      expect(() => widget.validate()).to.throw(error.ValidationError);
     });
   });
 });

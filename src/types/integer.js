@@ -17,6 +17,10 @@ class Integer extends Type {
   defineColumn (table, columnName) {
     return table.integer(columnName);
   }
+
+  isValid (value) {
+    return !isNaN(value);
+  }
 }
 
 module.exports = Integer;

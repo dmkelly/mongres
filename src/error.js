@@ -11,7 +11,14 @@ class GenericError extends Error {
 }
 
 class ConflictError extends GenericError {}
+class ValidationError extends GenericError {
+  constructor (message, details) {
+    super({ message });
+    this.details = details;
+  }
+}
 
 module.exports = {
-  ConflictError
+  ConflictError,
+  ValidationError
 };
