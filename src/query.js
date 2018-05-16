@@ -1,5 +1,5 @@
-const { normalizeSortArgs } = require('./lib/query');
-const { pick } = require('./utils');
+const { normalizeSortArgs, getWhereBuilder } = require('./lib/query');
+const { isFunction, pick } = require('./utils');
 
 class Query {
   constructor (Model, options) {
@@ -42,8 +42,19 @@ class Query {
   }
 
   where (filters = {}) {
-    filters = pick(filters, Object.keys(this.Model.schema.fields));
-    this.query = this.query.where(filters);
+    if (isFunction(filters)) {
+      this.query = this.query.where(filters);
+      return this;
+    }
+
+    const schema = this.Model.schema;
+    filters = pick(filters, Object.keys(schema.fields));
+
+    this.query = Object.entries(filters)
+      .reduce((query, [fieldName, filter]) => {
+        return query.where(getWhereBuilder(schema, fieldName, filter));
+      }, this.query);
+
     return this;
   }
 

@@ -1,4 +1,5 @@
-const { isNumber, isString } = require('../utils');
+const { isNil, isNumber, isObject, isString } = require('../utils');
+const filterMap = require('./filters');
 
 function normalizeSortArgs (...args) {
   if (args.length === 1) {
@@ -30,7 +31,30 @@ function parseSortDirection (direction) {
   return 'asc';
 }
 
+function getWhereBuilder (schema, fieldName, filter) {
+  const field = schema.fields[fieldName];
+
+  if (isNil(filter)) {
+    return;
+  }
+
+  if (!isObject(filter)) {
+    return (builder) => builder.where(fieldName, field.type.cast(filter));
+  }
+
+  return (builder) => {
+    Object.entries(filter)
+      .forEach((([key, value]) => {
+        const filterFn = filterMap[key];
+        if (filterFn) {
+          filterFn(builder, fieldName, value);
+        }
+      }));
+  };
+}
+
 module.exports = {
   normalizeSortArgs,
-  parseSortDirection
+  parseSortDirection,
+  getWhereBuilder
 };

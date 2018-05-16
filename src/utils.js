@@ -1,4 +1,4 @@
-const isNumber = require('is-number');
+const _ = require('lodash');
 const error = require('./error');
 
 function castError (err) {
@@ -24,27 +24,6 @@ async function invokeSeries (fns) {
   }
 }
 
-function isFunction (value) {
-  return typeof value === 'function';
-}
-
-function isString (value) {
-  return typeof value === 'string';
-}
-
-function isUndefined (value) {
-  return typeof value === 'undefined';
-}
-
-function pick (object, keys) {
-  return keys.reduce((cleaned, key) => {
-    if (object.hasOwnProperty(key)) {
-      cleaned[key] = object[key];
-    }
-    return cleaned;
-  }, {});
-}
-
 function template (text, substitutions) {
   return Object.entries(substitutions)
     .reduce((message, [key, value]) => {
@@ -58,10 +37,12 @@ module.exports = {
   escapeRegExp,
   invoke,
   invokeSeries,
-  isFunction,
-  isNumber,
-  isString,
-  isUndefined,
-  pick,
+  isFunction: _.isFunction,
+  isNil: _.isNil,
+  isNumber: _.isNumber,
+  isObject: _.isObject,
+  isString: _.isString,
+  isUndefined: _.isUndefined,
+  pick: _.pick,
   template
 };

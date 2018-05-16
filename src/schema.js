@@ -1,5 +1,5 @@
 const Types = require('./types');
-const { isFunction, isUndefined, template } = require('./utils');
+const { isFunction, isNil, isUndefined, template } = require('./utils');
 const Middleware = require('./middleware');
 const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
@@ -55,7 +55,7 @@ class Schema {
     return Object.keys(this.fields).reduce((cleaned, fieldName) => {
       const field = this.fields[fieldName];
       let value = data[fieldName];
-      if (value == null) {
+      if (isNil(value)) {
         return cleaned;
       }
       value = field.type.cast(value);
@@ -95,7 +95,7 @@ class Schema {
   }
 
   virtual (name) {
-    if (name == null) {
+    if (isNil(name)) {
       throw new Error('Schema virtuals require a name');
     }
 
