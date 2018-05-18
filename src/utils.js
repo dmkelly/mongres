@@ -24,6 +24,12 @@ async function invokeSeries (fns) {
   }
 }
 
+function sanitizeName (name) {
+  return name.trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_');
+}
+
 function template (text, substitutions) {
   return Object.entries(substitutions)
     .reduce((message, [key, value]) => {
@@ -44,6 +50,7 @@ module.exports = {
   isString: _.isString,
   isUndefined: _.isUndefined,
   pick: _.pick,
+  sanitizeName,
   setIn: _.set,
   template
 };

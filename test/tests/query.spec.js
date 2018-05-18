@@ -11,11 +11,7 @@ describe('Query', () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
-    Value = mongres.model('Value', new Schema({
-      a: {
-        type: Schema.Types.Integer()
-      }
-    }));
+
     Plot = mongres.model('Plot', new Schema({
       a: {
         type: Schema.Types.Integer()
@@ -25,6 +21,12 @@ describe('Query', () => {
         ref: 'Value'
       },
       c: {
+        type: Schema.Types.Integer()
+      }
+    }));
+
+    Value = mongres.model('Value', new Schema({
+      a: {
         type: Schema.Types.Integer()
       }
     }));

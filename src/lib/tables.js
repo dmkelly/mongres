@@ -1,8 +1,5 @@
-function sanitizeName (name) {
-  return name.trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '_');
-}
+const constraintDescriptions = require('./constraints');
+const { sanitizeName } = require('../utils');
 
 function defineField (table, fieldName, field) {
   const columnName = sanitizeName(fieldName);
@@ -29,9 +26,45 @@ async function createTable (instance, Model) {
   }
 }
 
+function getConstraints (Model) {
+  return Object.entries(Model.schema.fields)
+    .reduce((constraints, [fieldName, field]) => {
+      Object.keys(field)
+        .forEach((descriptor) => {
+          const constraint = constraintDescriptions[descriptor];
+          if (constraint) {
+            constraints.push((table) => constraint(
+              table,
+              sanitizeName(fieldName),
+              field
+            ));
+          }
+        });
+      return constraints;
+    }, []);
+}
+
+async function createTableConstraints (instance, Model) {
+  const dbSchema = instance.namespace
+    ? instance.client.schema.withSchema(instance.namespace)
+    : instance.client.schema;
+
+  const constraints = getConstraints(Model);
+  if (!constraints.length) {
+    return;
+  }
+  await dbSchema.alterTable(Model.tableName, (table) => {
+    constraints.forEach(constraint => constraint(table));
+  });
+}
+
 async function createTables (instance) {
   for (let Model of instance.models.values()) {
     await createTable(instance, Model);
+  }
+
+  for (let Model of instance.models.values()) {
+    await createTableConstraints(instance, Model);
   }
 }
 
