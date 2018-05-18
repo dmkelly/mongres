@@ -123,7 +123,16 @@ function modelFactory (instance, name, schema) {
         return this.data[fieldName];
       },
       set: function (value) {
-        const cleaned = schema.fields[fieldName].type.cast(value);
+        const field = schema.fields[fieldName];
+        if (field.ref) {
+          const Ref = instance.model(field.ref);
+          if (value instanceof Ref) {
+            this.data[fieldName] = value;
+            return;
+          }
+        }
+
+        const cleaned = field.type.cast(value);
         if (!isUndefined(cleaned)) {
           this.data[fieldName] = cleaned;
         }

@@ -44,5 +44,6 @@ module.exports = {
   isString: _.isString,
   isUndefined: _.isUndefined,
   pick: _.pick,
+  setIn: _.set,
   template
 };

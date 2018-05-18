@@ -4,18 +4,25 @@ const { Mongres, Schema } = require('../../src');
 describe('Query', () => {
   let mongres;
   let Plot;
+  let Value;
   let plotB;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
+    Value = mongres.model('Value', new Schema({
+      a: {
+        type: Schema.Types.Integer()
+      }
+    }));
     Plot = mongres.model('Plot', new Schema({
       a: {
         type: Schema.Types.Integer()
       },
       b: {
-        type: Schema.Types.Integer()
+        type: Schema.Types.Integer(),
+        ref: 'Value'
       },
       c: {
         type: Schema.Types.Integer()
@@ -24,9 +31,19 @@ describe('Query', () => {
 
     await mongres.connect(helpers.connectionInfo);
 
+    const joinedValue = await Value.create({
+      a: 3
+    });
+    await Value.create({
+      a: 2
+    });
+    await Value.create({
+      a: 1
+    });
+
     await Plot.create({
       a: 1,
-      b: 1,
+      b: joinedValue.id,
       c: 1,
       d: 1
     });
@@ -50,6 +67,18 @@ describe('Query', () => {
     it('Supports limiting result size', async () => {
       const records = await Plot.find().limit(2);
       expect(records.length).to.equal(2);
+    });
+  });
+
+  describe('#populate()', () => {
+    it('Includes populated fields in the result', async () => {
+      const record = await Plot.findOne({
+        a: 1
+      })
+        .populate('b');
+      expect(record.b).to.be.instanceof(Value);
+      expect(record.a).to.equal(1);
+      expect(record.b.a).to.equal(3);
     });
   });
 

@@ -1,6 +1,14 @@
 const { isNil, isNumber, isObject, isString } = require('../utils');
 const filterMap = require('./filters');
 
+function getTableModel (query, fieldName) {
+  const [tableName] = fieldName.split('.');
+  const Model = tableName === query.Model.tableName
+    ? query.Model
+    : query.joins[tableName].Model;
+  return Model;
+}
+
 function normalizeSortArgs (...args) {
   if (args.length === 1) {
     const param = args[0];
@@ -31,14 +39,15 @@ function parseSortDirection (direction) {
   return 'asc';
 }
 
-function getWhereBuilder (schema, fieldName, filter) {
-  const field = schema.fields[fieldName];
-
+function getWhereBuilder (query, fieldName, filter) {
   if (isNil(filter)) {
     return;
   }
 
   if (!isObject(filter)) {
+    const [tableName, columnName] = fieldName.split('.');
+    const Model = getTableModel(query, tableName);
+    const field = Model.schema.fields[columnName];
     return (builder) => builder.where(fieldName, field.type.cast(filter));
   }
 
@@ -54,6 +63,7 @@ function getWhereBuilder (schema, fieldName, filter) {
 }
 
 module.exports = {
+  getTableModel,
   normalizeSortArgs,
   parseSortDirection,
   getWhereBuilder
