@@ -8,6 +8,27 @@ async function invokeMiddleware (document, hook, middleware, isBlocking) {
   return invoke(fns);
 }
 
+function serialize (document) {
+  const { instance, schema } = document;
+  const data = Object.keys(schema.fields)
+    .reduce((data, fieldName) => {
+      const field = schema.fields[fieldName];
+      const value = document[fieldName];
+
+      if (field.ref) {
+        const Ref = instance.model(field.ref);
+        if (Ref && value instanceof Ref) {
+          data[fieldName] = value.id;
+          return data;
+        }
+      }
+
+      data[fieldName] = value;
+      return data;
+    }, {});
+  return data;
+}
+
 class Model {
   constructor () {
     this.isNew = true;
@@ -15,6 +36,24 @@ class Model {
 
   toObject () {
     return Object.assign({}, this.data);
+  }
+
+  async populate (fieldName) {
+    const field = this.schema.fields[fieldName];
+    if (!field || !field.ref) {
+      return await this;
+    }
+
+    const Ref = this.instance.model(field.ref);
+    if (!Ref) {
+      return await this;
+    }
+
+    const record = await Ref.findById(this[fieldName]);
+    if (record) {
+      this[fieldName] = record;
+    }
+    return this;
   }
 
   async remove () {
@@ -47,7 +86,7 @@ class Model {
     if (this.isNew) {
       const client = this.instance.client;
       this.id = await client(this.Model.tableName)
-        .insert(this.data)
+        .insert(serialize(this))
         .returning('id');
       this.isNew = false;
       invokeMiddleware(this, hook, post, false);
@@ -56,7 +95,7 @@ class Model {
 
     await this.Model.update({
       id: this.id
-    }, this.data);
+    }, serialize(this));
     invokeMiddleware(this, hook, post, false);
     return this;
   }
@@ -66,7 +105,7 @@ class Model {
     const hook = 'validate';
 
     await invokeMiddleware(this, hook, pre, true);
-    this.schema.validate(this.data);
+    this.schema.validate(serialize(this));
     invokeMiddleware(this, hook, post, false);
   }
 }

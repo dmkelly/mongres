@@ -77,18 +77,22 @@ class Schema {
   }
 
   validate (data) {
-    const errors = Object.keys(this.fields).reduce((errors, key) => {
-      try {
-        validateField(key, this.fields[key], data[key]);
-      } catch (err) {
-        if (err instanceof ValidationError) {
-          errors.push(err);
-          return errors;
+    const errors = Object.keys(this.fields)
+      .reduce((errors, fieldName) => {
+        const field = this.fields[fieldName];
+        const value = data[fieldName];
+        try {
+          validateField(fieldName, field, value);
+        } catch (err) {
+          if (err instanceof ValidationError) {
+            errors.push(err);
+            return errors;
+          }
+          throw err;
         }
-        throw err;
-      }
-      return errors;
-    }, []);
+        return errors;
+      }, []);
+
     if (errors.length) {
       throw new ValidationError('Validation Error', errors);
     }

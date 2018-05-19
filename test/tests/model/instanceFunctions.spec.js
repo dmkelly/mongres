@@ -6,6 +6,8 @@ describe('model/instanceFunctions', () => {
   let mongres;
   let Square;
   let Widget;
+  let Point;
+  let Line;
   let preRemoveMiddleware;
   let postRemoveMiddleware;
   let preSaveMiddleware;
@@ -44,6 +46,26 @@ describe('model/instanceFunctions', () => {
       }
     });
 
+    const pointSchema = new Schema({
+      x: {
+        type: Schema.Types.Integer()
+      },
+      y: {
+        type: Schema.Types.Integer()
+      }
+    });
+
+    const lineSchema = new Schema({
+      start: {
+        type: Schema.Types.Integer(),
+        ref: 'Point'
+      },
+      end: {
+        type: Schema.Types.Integer(),
+        ref: 'Point'
+      }
+    });
+
     widgetSchema.pre('remove', preRemoveMiddleware);
     widgetSchema.post('remove', postRemoveMiddleware);
     widgetSchema.pre('save', preSaveMiddleware);
@@ -53,12 +75,57 @@ describe('model/instanceFunctions', () => {
 
     Square = mongres.model('Square', squareSchema);
     Widget = mongres.model('Widget', widgetSchema);
+    Point = mongres.model('Point', pointSchema);
+    Line = mongres.model('Line', lineSchema);
 
     await mongres.connect(helpers.connectionInfo);
   });
 
   afterEach(() => {
     return mongres.disconnect();
+  });
+
+  describe('#populate()', () => {
+    let start;
+    let end;
+    let line;
+
+    beforeEach(async () => {
+      start = new Point({
+        x: 1,
+        y: 2
+      });
+      end = new Point({
+        x: 3,
+        y: 4
+      });
+      await start.save();
+      await end.save();
+      line = new Line({
+        start: start.id,
+        end: end.id
+      });
+      await line.save();
+    });
+
+    it('Attaches the referenced record to the document', async () => {
+      expect(line.start).to.equal(start.id);
+      await line.populate('start');
+      expect(line.start).to.be.instanceof(Point);
+      expect(line.start.toObject()).to.deep.equal(start.toObject());
+    });
+
+    it('Handles populated fields when it saves', async () => {
+      await line.populate('start');
+      line.end = 6;
+      await expect(line.save()).not.to.be.rejectedWith(error.ValidationError);
+    });
+
+    it('Handles populated fields when it validates', async () => {
+      await line.populate('start');
+      line.end = 6;
+      await expect(line.validate()).not.to.be.rejectedWith(error.ValidationError);
+    });
   });
 
   describe('#remove()', () => {
