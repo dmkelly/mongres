@@ -1,8 +1,19 @@
 const Model = require('./model');
 const Query = require('./query');
 const Types = require('./types');
-const { castError, isUndefined } = require('./utils');
+const { castError, isUndefined, isNil } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
+
+function extractDefaults (fields) {
+  return Object.entries(fields)
+    .reduce((defaults, [fieldName, field]) => {
+      const value = field.default;
+      if (!isNil(value)) {
+        defaults[fieldName] = field.type.cast(value);
+      }
+      return defaults;
+    }, {});
+}
 
 function attachCore (Model, instance) {
   Model.instance = instance;
@@ -102,7 +113,8 @@ function modelFactory (instance, name, schema) {
 
       this.instance = instance;
       this.schema = schema;
-      this.data = this.schema.cast(data);
+      const defaults = extractDefaults(this.schema.fields);
+      this.data = Object.assign({}, defaults, this.schema.cast(data));
     }
   }
 

@@ -151,4 +151,24 @@ describe('model/core', () => {
       expect(Widget.testStatic(2)).to.equal('widget2');
     });
   });
+
+  describe('defaults', () => {
+    let Widget;
+
+    beforeEach(() => {
+      const schema = new Schema({
+        height: {
+          type: Schema.Types.Integer(),
+          default: 5
+        }
+      });
+
+      Widget = mongres.model('Widget', schema);
+    });
+
+    it('Defaults are applied if no value is specified', () => {
+      const widget = new Widget();
+      expect(widget.height).to.equal(5);
+    });
+  });
 });
