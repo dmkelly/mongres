@@ -26,22 +26,31 @@ async function createTable (instance, Model) {
   }
 }
 
-function getConstraints (Model) {
-  return Object.entries(Model.schema.fields)
-    .reduce((constraints, [fieldName, field]) => {
-      Object.keys(field)
-        .forEach((descriptor) => {
-          const constraint = constraintDescriptions[descriptor];
-          if (constraint) {
-            constraints.push((table) => constraint(
-              table,
-              sanitizeName(fieldName),
-              field
-            ));
-          }
-        });
-      return constraints;
-    }, []);
+async function getConstraints (Model) {
+  const constraints = [];
+  const fieldPairs = Object.entries(Model.schema.fields);
+
+  for (let i = 0; i < fieldPairs.length; i += 1) {
+    const [fieldName, field] = fieldPairs[i];
+    const attributeKeys = Object.keys(field);
+
+    for (let j = 0; j < attributeKeys.length; j += 1) {
+      const attributeKey = attributeKeys[j];
+      const Constraint = constraintDescriptions[attributeKey];
+      if (!Constraint) {
+        continue;
+      }
+
+      const columnName = sanitizeName(fieldName);
+      const constraint = new Constraint(Model, columnName, field);
+      const constraintExists = await constraint.exists();
+      if (!constraintExists) {
+        constraints.push(constraint);
+      }
+    }
+  }
+
+  return constraints;
 }
 
 async function createTableConstraints (instance, Model) {
@@ -49,12 +58,16 @@ async function createTableConstraints (instance, Model) {
     ? instance.client.schema.withSchema(instance.namespace)
     : instance.client.schema;
 
-  const constraints = getConstraints(Model);
+  const constraints = await getConstraints(Model);
   if (!constraints.length) {
     return;
   }
-  await dbSchema.alterTable(Model.tableName, (table) => {
-    constraints.forEach(constraint => constraint(table));
+
+  await dbSchema.alterTable(Model.tableName, async (table) => {
+    for (let i = 0; i < constraints.length; i += 1) {
+      const constraint = constraints[i];
+      await constraint.create(table);
+    }
   });
 }
 
