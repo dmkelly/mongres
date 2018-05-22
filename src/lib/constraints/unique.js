@@ -8,14 +8,14 @@ class Unique extends Constraint {
     const constraint = constraints.find((c) => {
       return c.constraint_type === 'UNIQUE'
         && c.table_name === tableName
-        && c.constraint_name === `${tableName}_${this.columnName}_unique`;
+        && c.constraint_name === `${tableName}_${this.field.columnName}_unique`;
     });
 
     return !!constraint;
   }
 
   create (table) {
-    return table.unique([this.columnName]);
+    return table.unique([this.field.columnName]);
   }
 }
 

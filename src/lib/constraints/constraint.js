@@ -1,7 +1,6 @@
 class Constraint {
-  constructor (Model, columnName, field) {
+  constructor (Model, field) {
     this.Model = Model;
-    this.columnName = columnName;
     this.field = field;
   }
 

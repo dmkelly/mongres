@@ -1,6 +1,5 @@
 const Constraint = require('./constraint');
 const { getConstraints } = require('../describe');
-const { sanitizeName } = require('../../utils');
 
 async function hasForeignKey (Model, columnName) {
   const constraints = await getConstraints(Model.instance, Model.tableName);
@@ -15,12 +14,12 @@ async function hasForeignKey (Model, columnName) {
 
 class Ref extends Constraint {
   async exists () {
-    return await hasForeignKey(this.Model, this.columnName);
+    return await hasForeignKey(this.Model, this.field.columnName);
   }
 
   create (table) {
-    return table.foreign(this.columnName)
-      .references(`${sanitizeName(this.field.ref)}.id`);
+    return table.foreign(this.field.columnName)
+      .references(`${this.field.refTableName}.id`);
   }
 }
 

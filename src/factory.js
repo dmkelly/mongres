@@ -1,4 +1,5 @@
 const Model = require('./model');
+const Field = require('./field');
 const Query = require('./query');
 const Types = require('./types');
 const { castError, isUndefined, isNil } = require('./utils');
@@ -7,7 +8,7 @@ const { sanitizeName } = require('./lib/tables');
 function extractDefaults (fields) {
   return Object.entries(fields)
     .reduce((defaults, [fieldName, field]) => {
-      const value = field.default;
+      const value = field.defaultValue;
       if (!isNil(value)) {
         defaults[fieldName] = field.type.cast(value);
       }
@@ -113,6 +114,7 @@ function modelFactory (instance, name, schema) {
 
       this.instance = instance;
       this.schema = schema;
+      this.schema.instance = instance;
       const defaults = extractDefaults(this.schema.fields);
       this.data = Object.assign({}, defaults, this.schema.cast(data));
     }
@@ -123,9 +125,9 @@ function modelFactory (instance, name, schema) {
   Item.prototype.Model = Item;
 
   if (!schema.fields.id) {
-    schema.fields.id = {
+    schema.fields.id = new Field(schema, 'id', {
       type: Types.Id()
-    };
+    });
   }
 
   const properties = Object.keys(schema.fields);

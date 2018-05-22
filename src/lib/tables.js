@@ -28,11 +28,12 @@ async function createTable (instance, Model) {
 
 async function getConstraints (Model) {
   const constraints = [];
-  const fieldPairs = Object.entries(Model.schema.fields);
+  const fields = Object.values(Model.schema.fields);
 
-  for (let i = 0; i < fieldPairs.length; i += 1) {
-    const [fieldName, field] = fieldPairs[i];
-    const attributeKeys = Object.keys(field);
+  for (let i = 0; i < fields.length; i += 1) {
+    const field = fields[i];
+    const attributes = field.getConstraints();
+    const attributeKeys = Object.keys(attributes);
 
     for (let j = 0; j < attributeKeys.length; j += 1) {
       const attributeKey = attributeKeys[j];
@@ -41,8 +42,7 @@ async function getConstraints (Model) {
         continue;
       }
 
-      const columnName = sanitizeName(fieldName);
-      const constraint = new Constraint(Model, columnName, field);
+      const constraint = new Constraint(Model, field);
       const constraintExists = await constraint.exists();
       if (!constraintExists) {
         constraints.push(constraint);

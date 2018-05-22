@@ -1,42 +1,17 @@
 const Types = require('./types');
-const { isFunction, isNil, isUndefined, template } = require('./utils');
+const { isNil, isUndefined } = require('./utils');
+const Field = require('./field');
 const Middleware = require('./middleware');
 const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
 
-function validateField (fieldName, field, value) {
-  if (isUndefined(value)) {
-    if (field.required) {
-      throw new ValidationError(`Field ${fieldName} is required`, {
-        field: fieldName
-      });
-    }
-    return;
-  }
-  if (!field.type.isValid(value)) {
-    throw new ValidationError(`Invalid value of field ${fieldName}: ${value}`, {
-      field: fieldName,
-      value
-    });
-  }
-  if (field.validate && isFunction(field.validate.validator)) {
-    const { message, validator } = field.validate;
-    if (!validator(value)) {
-      const defaultMessage = `Validation failed on ${fieldName}: ${value}`;
-      const messageText = message && template(message, {
-        VALUE: value
-      });
-      throw new ValidationError(messageText || defaultMessage, {
-        field: fieldName,
-        value
-      });
-    }
-  }
-}
-
 class Schema {
   constructor (fields, options) {
-    this.fields = fields;
+    this.fields = Object.entries(fields)
+      .reduce((lookup, [fieldName, definition]) => {
+        lookup[fieldName] = new Field(this, fieldName, definition);
+        return lookup;
+      }, {});
     this.options = options;
     this.methods = {};
     this.statics = {};
@@ -52,18 +27,19 @@ class Schema {
       return {};
     }
 
-    return Object.keys(this.fields).reduce((cleaned, fieldName) => {
-      const field = this.fields[fieldName];
-      let value = data[fieldName];
-      if (isNil(value)) {
+    return Object.keys(this.fields)
+      .reduce((cleaned, fieldName) => {
+        const field = this.fields[fieldName];
+        let value = data[fieldName];
+        if (isNil(value)) {
+          return cleaned;
+        }
+        value = field.type.cast(value);
+        if (!isUndefined(value)) {
+          cleaned[fieldName] = value;
+        }
         return cleaned;
-      }
-      value = field.type.cast(value);
-      if (!isUndefined(value)) {
-        cleaned[fieldName] = value;
-      }
-      return cleaned;
-    }, {});
+      }, {});
   }
 
   pre (hook, callback) {
@@ -82,7 +58,7 @@ class Schema {
         const field = this.fields[fieldName];
         const value = data[fieldName];
         try {
-          validateField(fieldName, field, value);
+          field.validate(value);
         } catch (err) {
           if (err instanceof ValidationError) {
             errors.push(err);
