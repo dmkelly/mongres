@@ -32,7 +32,21 @@ class Model {
   }
 
   toObject () {
-    return Object.assign({}, this.data);
+    return Object.values(this.schema.fields)
+      .reduce((data, field) => {
+        const fieldName = field.fieldName;
+        if (field.isNested) {
+          data[fieldName] = this[fieldName].map((item) => item.toObject());
+        } else {
+          const value = this[fieldName];
+          if (value instanceof Model) {
+            data[fieldName] = value.toObject();
+          } else if (!isUndefined(value)) {
+            data[fieldName] = value;
+          }
+        }
+        return data;
+      }, {});
   }
 
   async populate (fieldName) {

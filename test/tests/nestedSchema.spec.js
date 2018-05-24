@@ -110,4 +110,45 @@ describe('Nested Schemas', () => {
       expect(line.points[1]).to.be.instanceof(Point);
     });
   });
+
+  describe('Model#find()', () => {
+    let existingLine1;
+    let existingLine2;
+
+    beforeEach(async () => {
+      existingLine1 = new Line({
+        points: [{
+          x: 1,
+          y: 2
+        }, {
+          x: 3,
+          y: 4
+        }]
+      });
+      existingLine2 = new Line({
+        points: [{
+          x: 5,
+          y: 6
+        }, {
+          x: 7,
+          y: 8
+        }, {
+          x: 9,
+          y: 10
+        }]
+      });
+      await existingLine1.save();
+      await existingLine2.save();
+    });
+
+    it('Populates subdocuments on retrieval', async () => {
+      const lines = await Line.find();
+      const line1 = lines.find(line => line.id === existingLine1.id);
+      const line2 = lines.find(line => line.id === existingLine2.id);
+
+      expect(lines.length).to.equal(2);
+      expect(line1.points.length).to.equal(2);
+      expect(line2.points.length).to.equal(3);
+    });
+  });
 });
