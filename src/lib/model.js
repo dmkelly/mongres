@@ -1,3 +1,14 @@
+function getBackRefFields (Model, schema) {
+  const fields = Object.values(schema.fields);
+  const backRefFields = fields.reduce((backRefFields, field) => {
+    if (field.refTableName === Model.tableName) {
+      backRefFields.push(field);
+    }
+    return backRefFields;
+  }, []);
+  return backRefFields;
+}
+
 function serialize (document) {
   const { instance, schema } = document;
   const data = Object.keys(schema.fields)
@@ -24,5 +35,6 @@ function serialize (document) {
 }
 
 module.exports = {
+  getBackRefFields,
   serialize
 };

@@ -83,4 +83,31 @@ describe('Nested Schemas', () => {
       expect(savedPoints[1].line).to.equal(savedLine.id);
     });
   });
+
+  describe('Model#findOne()', () => {
+    let existingLine;
+
+    beforeEach(async () => {
+      existingLine = new Line({
+        points: [{
+          x: 1,
+          y: 2
+        }, {
+          x: 3,
+          y: 4
+        }]
+      });
+      await existingLine.save();
+    });
+
+    it('Populates subdocuments on retrieval', async () => {
+      const line = await Line.findOne({
+        id: existingLine.id
+      });
+      expect(line).to.be.ok;
+      expect(line.points.length).to.equal(2);
+      expect(line.points[0]).to.be.instanceof(Point);
+      expect(line.points[1]).to.be.instanceof(Point);
+    });
+  });
 });

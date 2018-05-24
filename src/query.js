@@ -1,4 +1,5 @@
 const { getTableModel, normalizeSortArgs, getWhereBuilder } = require('./lib/query');
+const { getBackRefFields } = require('./lib/model');
 const { isFunction, pick, setIn } = require('./utils');
 
 class Join {
@@ -16,8 +17,14 @@ function ensureColumnNamespace (fieldName, Model) {
 }
 
 function getFieldsList (Model) {
-  return Object.keys(Model.schema.fields)
-    .map((field) => ensureColumnNamespace(field, Model));
+  return Object.values(Model.schema.fields)
+    .map((field) => {
+      if (field.isNested) {
+        return null;
+      }
+      return ensureColumnNamespace(field.columnName, Model);
+    })
+    .filter(Boolean);
 }
 
 function toColumns (fieldsList) {
@@ -59,7 +66,7 @@ function toModel (record, query) {
 }
 
 class Query {
-  constructor (Model, options) {
+  constructor (Model, options = {}) {
     this.Model = Model;
     this.options = options;
     this.client = this.Model.instance.client;
@@ -146,8 +153,39 @@ class Query {
 
   then (callback) {
     return this.query
-      .then((results) => {
-        return results.map((record) => toModel(record, this));
+      .then(async (results) => {
+        const nestedFields = Object.values(this.Model.schema.fields)
+          .filter((field) => field.isNested);
+        if (!nestedFields.length) {
+          return results.map((record) => toModel(record, this));
+        }
+
+        const idField = `${this.Model.tableName}.id`;
+        const nestedResults = await Promise.all(nestedFields.map((field) => {
+          const backRefField = getBackRefFields(this.Model, field.type.schema)[0];
+
+          return new Query(field.type).where({
+            [backRefField.fieldName]: {
+              $in: results.map(item => item[idField])
+            }
+          });
+        }));
+
+        return results.map((record) => {
+          for (let i = 0; i < nestedFields.length; i += 1) {
+            const field = nestedFields[i];
+            const backRefField = getBackRefFields(this.Model, field.type.schema)[0];
+            const results = nestedResults[i].filter((item) => {
+              return item[backRefField.fieldName] === record[idField];
+            });
+
+            // Namespace with table name so `toModel` knows how to convert the
+            // record data to the model
+            const attachKey = `${this.Model.tableName}.${field.fieldName}`;
+            record[attachKey] = results;
+          }
+          return toModel(record, this);
+        });
       })
       .then((records) => {
         if (!this.options.single) {

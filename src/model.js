@@ -1,5 +1,5 @@
 const { invoke, invokeSeries, isUndefined } = require('./utils');
-const { serialize } = require('./lib/model');
+const { getBackRefFields, serialize } = require('./lib/model');
 
 async function invokeMiddleware (document, hook, middleware, isBlocking) {
   const fns = middleware.map(mid => () => mid.execute(hook, document));
@@ -7,17 +7,6 @@ async function invokeMiddleware (document, hook, middleware, isBlocking) {
     return await invokeSeries(fns);
   }
   return invoke(fns);
-}
-
-function getBackRefFields (Model, schema) {
-  const fields = Object.values(schema.fields);
-  const backRefFields = fields.reduce((backRefFields, field) => {
-    if (field.refTableName === Model.tableName) {
-      backRefFields.push(field);
-    }
-    return backRefFields;
-  }, []);
-  return backRefFields;
 }
 
 async function saveNestedFields (transaction, document) {
