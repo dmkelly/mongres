@@ -1,4 +1,5 @@
 const { invoke, invokeSeries, isUndefined } = require('./utils');
+const { serialize } = require('./lib/model');
 
 async function invokeMiddleware (document, hook, middleware, isBlocking) {
   const fns = middleware.map(mid => () => mid.execute(hook, document));
@@ -8,25 +9,32 @@ async function invokeMiddleware (document, hook, middleware, isBlocking) {
   return invoke(fns);
 }
 
-function serialize (document) {
-  const { instance, schema } = document;
-  const data = Object.keys(schema.fields)
-    .reduce((data, fieldName) => {
-      const field = schema.fields[fieldName];
-      const value = document[fieldName];
+function getBackRefFields (Model, schema) {
+  const fields = Object.values(schema.fields);
+  const backRefFields = fields.reduce((backRefFields, field) => {
+    if (field.refTableName === Model.tableName) {
+      backRefFields.push(field);
+    }
+    return backRefFields;
+  }, []);
+  return backRefFields;
+}
 
-      if (field.ref) {
-        const Ref = instance.model(field.ref);
-        if (Ref && value instanceof Ref) {
-          data[fieldName] = value.id;
-          return data;
-        }
-      }
+async function saveNestedFields (transaction, document) {
+  const fields = Object.values(document.schema.fields);
+  for (let field of fields) {
+    if (field.isNested) {
+      const values = document[field.fieldName];
+      const backRefFields = getBackRefFields(document.Model, field.type.schema);
 
-      data[fieldName] = value;
-      return data;
-    }, {});
-  return data;
+      await Promise.all(values.map((nestedDoc) => {
+        backRefFields.forEach((backRefField) => {
+          nestedDoc[backRefField.fieldName] = backRefField.cast(document.id);
+        });
+        return nestedDoc.save({ transaction });
+      }));
+    }
+  }
 }
 
 class Model {
@@ -76,27 +84,47 @@ class Model {
     return null;
   }
 
-  async save () {
+  async save ({ transaction } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'save';
 
     await this.validate();
     await invokeMiddleware(this, hook, pre, true);
 
-    if (this.isNew) {
-      const client = this.instance.client;
-      this.id = await client(this.Model.tableName)
-        .insert(serialize(this))
-        .returning('id');
-      this.isNew = false;
-      invokeMiddleware(this, hook, post, false);
-      return this;
-    }
+    const client = this.instance.client;
+    const data = serialize(this);
 
-    await this.Model.update({
-      id: this.id
-    }, serialize(this));
+    if (transaction) {
+      if (this.isNew) {
+        this.id = await transaction.insert(data)
+          .into(this.Model.tableName)
+          .returning('id');
+        this.isNew = false;
+      } else {
+        await this.Model.update({
+          id: this.id
+        }, data, { transaction });
+      }
+    } else {
+      await client.transaction(async (trx) => {
+        if (this.isNew) {
+          this.id = await trx.insert(data)
+            .into(this.Model.tableName)
+            .returning('id');
+          this.isNew = false;
+        } else {
+          await trx.update(data)
+            .into(this.Model.tableName)
+            .where({
+              id: this.id
+            });
+        }
+
+        await saveNestedFields(trx, this);
+      });
+    }
     invokeMiddleware(this, hook, post, false);
+
     return this;
   }
 
@@ -105,7 +133,7 @@ class Model {
     const hook = 'validate';
 
     await invokeMiddleware(this, hook, pre, true);
-    this.schema.validate(serialize(this));
+    this.schema.validate(this);
     invokeMiddleware(this, hook, post, false);
   }
 }
