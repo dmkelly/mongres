@@ -84,7 +84,7 @@ class Model {
     return this;
   }
 
-  async remove () {
+  async remove ({ transaction } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'remove';
 
@@ -97,7 +97,7 @@ class Model {
 
     await this.Model.remove({
       id: this.id
-    });
+    }, { transaction });
 
     invokeMiddleware(this, hook, post, false);
 

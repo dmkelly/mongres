@@ -53,6 +53,10 @@ function attachCore (Model, instance) {
   };
 
   Model.findById = async function (id) {
+    id = Model.schema.fields.id.cast(id);
+    if (isNil(id)) {
+      return await null;
+    }
     return await Model.findOne({ id });
   };
 
