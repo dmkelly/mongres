@@ -258,6 +258,60 @@ describe('model/instanceFunctions', () => {
     });
   });
 
+  describe('#toObject()', () => {
+    it('Represents the model data as a plain object', () => {
+      const square = new Square({
+        height: 5,
+        width: 10
+      });
+      expect(square.toObject()).to.deep.equal({
+        height: 5,
+        width: 10
+      });
+    });
+
+    it('Returns a copy of the data', () => {
+      const square = new Square({
+        height: 5,
+        width: 10
+      });
+      const data = square.toObject();
+      data.height = 20;
+      expect(square.height).to.equal(5);
+    });
+
+    it('Supports nested schemas', async () => {
+      const start = new Point({
+        x: 1,
+        y: 2
+      });
+      const end = new Point({
+        x: 3,
+        y: 4
+      });
+      await start.save();
+      await end.save();
+      const line = new Line({
+        start: start.id,
+        end: end.id
+      });
+      await line.populate('start');
+      await line.populate('end');
+      expect(line.toObject()).to.deep.equal({
+        start: {
+          x: 1,
+          y: 2,
+          id: start.id
+        },
+        end: {
+          x: 3,
+          y: 4,
+          id: end.id
+        }
+      });
+    });
+  });
+
   describe('#validate()', () => {
     it('Enforces required fields', () => {
       const square = new Square({

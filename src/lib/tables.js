@@ -2,8 +2,10 @@ const constraintDescriptions = require('./constraints');
 const { sanitizeName } = require('../utils');
 
 function defineField (table, fieldName, field) {
-  const columnName = sanitizeName(fieldName);
-  field.type.defineColumn(table, columnName);
+  if (!field.isNested) {
+    const columnName = sanitizeName(fieldName);
+    field.type.defineColumn(table, columnName);
+  }
 }
 
 function defineTable (table, schema) {
@@ -24,6 +26,27 @@ async function createTable (instance, Model) {
       defineTable(table, Model.schema);
     });
   }
+}
+
+async function updateForeignKeys (instance) {
+  const foreignKeys = await instance.client('pg_constraint')
+    .select('*')
+    .where('contype', '=', 'f');
+
+  const queries = foreignKeys.map(async (foreignKey) => {
+    const [keyData] = await instance.client('pg_class')
+      .select('relname')
+      .where('oid', '=', foreignKey.conrelid);
+
+    const tableName = keyData.relname;
+    return instance.dbSchema.raw(`
+      ALTER TABLE "${tableName}"
+      ALTER CONSTRAINT ${foreignKey.conname}
+      DEFERRABLE INITIALLY DEFERRED;
+    `);
+  });
+
+  await Promise.all(queries);
 }
 
 async function getConstraints (Model) {
@@ -54,21 +77,18 @@ async function getConstraints (Model) {
 }
 
 async function createTableConstraints (instance, Model) {
-  const dbSchema = instance.namespace
-    ? instance.client.schema.withSchema(instance.namespace)
-    : instance.client.schema;
-
   const constraints = await getConstraints(Model);
   if (!constraints.length) {
     return;
   }
 
-  await dbSchema.alterTable(Model.tableName, async (table) => {
-    for (let i = 0; i < constraints.length; i += 1) {
-      const constraint = constraints[i];
-      await constraint.create(table);
+  await instance.dbSchema.alterTable(Model.tableName, (table) => {
+    for (let constraint of constraints) {
+      constraint.create(table);
     }
   });
+
+  await updateForeignKeys(instance);
 }
 
 async function createTables (instance) {

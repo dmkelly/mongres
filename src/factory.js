@@ -10,7 +10,7 @@ function extractDefaults (fields) {
     .reduce((defaults, [fieldName, field]) => {
       const value = field.defaultValue;
       if (!isNil(value)) {
-        defaults[fieldName] = field.type.cast(value);
+        defaults[fieldName] = field.cast(value);
       }
       return defaults;
     }, {});
@@ -19,15 +19,20 @@ function extractDefaults (fields) {
 function attachCore (Model, instance) {
   Model.instance = instance;
 
-  Model.create = async function (data) {
+  Model.create = async function (data, { transaction } = {}) {
     const client = instance.client;
     const document = new Model(data);
     await document.validate();
 
     let result;
+    let query = client.table(Model.tableName)
+      .insert(document.data, 'id');
+    if (transaction) {
+      query = query.transacting(transaction);
+    }
+
     try {
-      result = await client.table(Model.tableName)
-        .insert(document.data, 'id');
+      result = await query;
     } catch (err) {
       throw castError(err);
     }
@@ -48,26 +53,41 @@ function attachCore (Model, instance) {
   };
 
   Model.findById = async function (id) {
+    id = Model.schema.fields.id.cast(id);
+    if (isNil(id)) {
+      return await null;
+    }
     return await Model.findOne({ id });
   };
 
-  Model.remove = async function (filters) {
+  Model.remove = async function (filters, { transaction } = {}) {
     if (!filters) {
       throw await new Error('Model.remove() requires conditions');
     }
     const client = instance.client;
-    const result = await client.table(Model.tableName)
+    let query = client.table(Model.tableName)
       .where(filters)
       .del();
+    if (transaction) {
+      query = query.transacting(transaction);
+    }
+
+    const result = await query;
     return {
       nModified: result
     };
   };
 
-  Model.update = async function (filters, changes) {
+  Model.update = async function (filters, changes, { transaction } = {}) {
     const client = instance.client;
-    const result = await client.table(Model.tableName)
-      .update(changes);
+    let query = client.table(Model.tableName)
+      .update(changes)
+      .where(filters);
+    if (transaction) {
+      query = query.transacting(transaction);
+    }
+
+    const result = await query;
     return {
       nModified: result
     };
@@ -120,8 +140,10 @@ function modelFactory (instance, name, schema) {
     }
   }
 
+  Item.modelName = name;
   Item.tableName = sanitizeName(name);
   Item.schema = schema;
+  Item.schema.instance = instance;
   Item.prototype.Model = Item;
 
   if (!schema.fields.id) {
@@ -146,7 +168,7 @@ function modelFactory (instance, name, schema) {
           }
         }
 
-        const cleaned = field.type.cast(value);
+        const cleaned = field.cast(value);
         if (!isUndefined(cleaned)) {
           this.data[fieldName] = cleaned;
         }

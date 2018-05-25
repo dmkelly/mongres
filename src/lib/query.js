@@ -48,7 +48,7 @@ function getWhereBuilder (query, fieldName, filter) {
     const [tableName, columnName] = fieldName.split('.');
     const Model = getTableModel(query, tableName);
     const field = Model.schema.fields[columnName];
-    return (builder) => builder.where(fieldName, field.type.cast(filter));
+    return (builder) => builder.where(fieldName, field.cast(filter));
   }
 
   return (builder) => {

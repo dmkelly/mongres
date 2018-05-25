@@ -34,7 +34,7 @@ class Schema {
         if (isNil(value)) {
           return cleaned;
         }
-        value = field.type.cast(value);
+        value = field.cast(value);
         if (!isUndefined(value)) {
           cleaned[fieldName] = value;
         }

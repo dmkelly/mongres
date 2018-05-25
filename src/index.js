@@ -22,6 +22,12 @@ class Mongres {
     this.namespace = 'public';
   }
 
+  get dbSchema () {
+    return this.namespace
+      ? this.client.schema.withSchema(this.namespace)
+      : this.client.schema;
+  }
+
   connect (connectionInfo) {
     this.client = knex(connectionInfo);
     return createTables(this);
