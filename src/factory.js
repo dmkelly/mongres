@@ -143,6 +143,7 @@ function modelFactory (instance, name, schema) {
   Item.modelName = name;
   Item.tableName = sanitizeName(name);
   Item.schema = schema;
+  Item.schema.instance = instance;
   Item.prototype.Model = Item;
 
   if (!schema.fields.id) {

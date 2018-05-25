@@ -223,4 +223,53 @@ describe('Nested Schemas', () => {
       expect(line2.points.length).to.equal(3);
     });
   });
+
+  describe('Model#remove()', () => {
+    it('Removes nested subdocuments', async () => {
+      const line = new Line({
+        points: [{
+          x: 1,
+          y: 2
+        }, {
+          x: 3,
+          y: 4
+        }]
+      });
+      await line.save();
+      await line.remove();
+      const savedPoints = await helpers.query.find(Point.tableName);
+
+      expect(savedPoints.length).to.equal(0);
+    });
+
+    it('Removes deeply nested subdocuments', async () => {
+      const shape = new Shape({
+        lines: [{
+          points: [{
+            x: 1,
+            y: 2
+          }, {
+            x: 3,
+            y: 4
+          }]
+        }, {
+          points:[{
+            x: 5,
+            y: 6
+          }, {
+            x: 7,
+            y: 8
+          }]
+        }]
+      });
+      await shape.save();
+      await shape.remove();
+
+      const savedLines = await helpers.query.find(Line.tableName);
+      const savedPoints = await helpers.query.find(Point.tableName);
+
+      expect(savedLines.length).to.equal(0);
+      expect(savedPoints.length).to.equal(0);
+    });
+  });
 });

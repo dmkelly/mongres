@@ -1,47 +1,6 @@
-const {
-  isFunction,
-  isString,
-  isUndefined,
-  sanitizeName,
-  template
-} = require('./utils');
+const { isString, sanitizeName } = require('./utils');
+const { getRef, validateField } = require('./lib/field');
 const { ValidationError } = require('./error');
-
-function validateField (field, value) {
-  if (isUndefined(value)) {
-    if (field.required) {
-      throw new ValidationError(`Field ${field.fieldName} is required`, {
-        field: field.fieldName
-      });
-    }
-    return;
-  }
-  if (!field.type.isValid(value)) {
-    throw new ValidationError(`Invalid value of field ${field.fieldName}: ${value}`, {
-      field: field.fieldName,
-      value
-    });
-  }
-  if (field.validator && isFunction(field.validator)) {
-    if (!field.validator(value)) {
-      const defaultMessage = `Validation failed on ${field.fieldName}: ${value}`;
-      const messageText = field.validationTemplate && template(field.validationTemplate, {
-        VALUE: value
-      });
-      throw new ValidationError(messageText || defaultMessage, {
-        field: field.fieldName,
-        value
-      });
-    }
-  }
-}
-
-function getRef (field) {
-  if (!field.ref) {
-    return null;
-  }
-  return field.schema.instance.model(field.ref);
-}
 
 class Field {
   constructor (schema, fieldName, definition) {
