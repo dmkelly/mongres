@@ -26,6 +26,23 @@ async function saveNestedFields (transaction, document) {
   }
 }
 
+async function upsert (transaction, document) {
+  const data = serialize(document);
+
+  if (document.isNew) {
+    document.id = await transaction.insert(data)
+      .into(document.Model.tableName)
+      .returning('id');
+    document.isNew = false;
+  } else {
+    await document.Model.update({
+      id: document.id
+    }, data, { transaction });
+  }
+
+  await saveNestedFields(transaction, document);
+}
+
 class Model {
   constructor () {
     this.isNew = true;
@@ -95,37 +112,13 @@ class Model {
     await invokeMiddleware(this, hook, pre, true);
 
     const client = this.instance.client;
-    const data = serialize(this);
 
     if (transaction) {
-      if (this.isNew) {
-        this.id = await transaction.insert(data)
-          .into(this.Model.tableName)
-          .returning('id');
-        this.isNew = false;
-      } else {
-        await this.Model.update({
-          id: this.id
-        }, data, { transaction });
-      }
+      await upsert(transaction, this);
     } else {
-      await client.transaction(async (trx) => {
-        if (this.isNew) {
-          this.id = await trx.insert(data)
-            .into(this.Model.tableName)
-            .returning('id');
-          this.isNew = false;
-        } else {
-          await trx.update(data)
-            .into(this.Model.tableName)
-            .where({
-              id: this.id
-            });
-        }
-
-        await saveNestedFields(trx, this);
-      });
+      await client.transaction((trx) => upsert(trx, this));
     }
+
     invokeMiddleware(this, hook, post, false);
 
     return this;
