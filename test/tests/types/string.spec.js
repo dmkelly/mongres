@@ -22,8 +22,8 @@ describe('types/String', () => {
     });
 
     it('Correctly handles falsy values', () => {
-      expect(string.cast(null)).to.be.null;
-      expect(string.cast()).to.be.null;
+      expect(string.cast(null)).to.be.undefined;
+      expect(string.cast()).to.be.undefined;
       expect(string.cast(0)).to.equal('0');
       expect(string.cast('')).to.equal('');
       expect(string.cast(false)).to.equal('false');

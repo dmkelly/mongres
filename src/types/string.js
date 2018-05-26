@@ -10,7 +10,7 @@ class String extends Type {
 
   cast (value) {
     if (isNil(value)) {
-      return null;
+      return;
     }
     if (isObject(value)) {
       return JSON.stringify(value);

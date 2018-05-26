@@ -6,7 +6,7 @@ const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
 
 class Schema {
-  constructor (fields, options) {
+  constructor (fields, options = {}) {
     this.fields = Object.entries(fields)
       .reduce((lookup, [fieldName, definition]) => {
         lookup[fieldName] = new Field(this, fieldName, definition);

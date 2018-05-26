@@ -1,7 +1,7 @@
-const helpers = require('../../helpers');
-const { error, Mongres, Schema } = require('../../../src');
+const helpers = require('../../../helpers');
+const { error, Mongres, Schema } = require('../../../../src');
 
-describe('model/classFunctions', () => {
+describe('model/discriminator/classFunctions', () => {
   let mongres;
   let Square;
   let Widget;

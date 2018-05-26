@@ -1,6 +1,7 @@
-const Model = require('./model');
 const Field = require('./field');
+const Model = require('./model');
 const Query = require('./query');
+const Schema = require('./schema');
 const Types = require('./types');
 const { castError, isUndefined, isNil } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
@@ -39,6 +40,79 @@ function attachCore (Model, instance) {
 
     document.id = result[0];
     return document;
+  };
+
+  Model.discriminator = function (modelName, schema) {
+    if (!schema.fields[Model.tableName]) {
+      schema.fields[Model.tableName] = {
+        type: Types.Integer(),
+        ref: Model.modelName
+      };
+    }
+
+    const fullSchema = new Schema(Object.assign(
+      {},
+      Model.schema.fields,
+      schema.fields,
+      {
+        [schema.options.discriminatorKey || 'type']: {
+          type: Types.String(63)
+        }
+      }
+    ));
+
+    class Item extends Model {
+      constructor (...args) {
+        super(...args);
+
+        const [data] = args;
+
+        this.Parent = Model;
+        this.childSchema = schema;
+        this.schema = fullSchema;
+        this.schema.instance = instance;
+        const defaults = extractDefaults(this.schema.fields);
+        this.data = Object.assign({}, defaults, this.schema.cast(data));
+      }
+    }
+
+    Item.modelName = modelName;
+    Item.tableName = sanitizeName(modelName);
+    Item.schema = fullSchema;
+    Item.schema.instance = instance;
+    Item.prototype.Model = Item;
+    Item.Parent = Model;
+
+    const properties = Object.keys(schema.fields);
+    properties.forEach((fieldName) => {
+      Object.defineProperty(Item.prototype, fieldName, {
+        get: function () {
+          return this.data[fieldName];
+        },
+        set: function (value) {
+          const field = schema.fields[fieldName];
+          if (field.ref) {
+            const Ref = instance.model(field.ref);
+            if (value instanceof Ref) {
+              this.data[fieldName] = value;
+              return;
+            }
+          }
+
+          const cleaned = field.cast(value);
+          if (!isUndefined(cleaned)) {
+            this.data[fieldName] = cleaned;
+          }
+        }
+      });
+    });
+
+    attachCore(Item, instance);
+    attachMethods(Item, schema);
+    attachStatics(Item, schema);
+    attachVirtuals(Item, schema);
+
+    return Item;
   };
 
   Model.find = function (filters = {}) {
