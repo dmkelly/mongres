@@ -40,6 +40,7 @@ function template (text, substitutions) {
 
 module.exports = {
   castError,
+  cloneDeep: _.cloneDeep,
   escapeRegExp,
   invoke,
   invokeSeries,

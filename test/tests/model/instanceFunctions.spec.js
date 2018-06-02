@@ -85,6 +85,46 @@ describe('model/instanceFunctions', () => {
     return mongres.disconnect();
   });
 
+  describe('#isModified()', () => {
+    let existingPoint;
+
+    beforeEach(async () => {
+      existingPoint = await Point.create({
+        x: 1,
+        y: 2
+      });
+    });
+
+    it('Ignores invalid fields', () => {
+      expect(existingPoint.isModified('asdf')).to.equal(false);
+    });
+
+    it('Handles when the document is new', () => {
+      const newPoint = new Point({
+        x: 1,
+        y: 2
+      });
+      expect(newPoint.isModified('x')).to.equal(true);
+    });
+
+    it('Handles when the field has not changed since loading', async () => {
+      const point = await Point.findById(existingPoint.id);
+      expect(point.isModified('x')).to.equal(false);
+    });
+
+    it('Handles when the field has changed since loading', async () => {
+      const point = await Point.findById(existingPoint.id);
+      point.x = 4;
+      expect(point.isModified('x')).to.equal(true);
+    });
+
+    it('Resyncs values on save', async () => {
+      existingPoint.x = 3;
+      await existingPoint.save();
+      expect(existingPoint.isModified('x')).to.equal(false);
+    });
+  });
+
   describe('#populate()', () => {
     let start;
     let end;

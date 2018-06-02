@@ -2,7 +2,7 @@ const Field = require('./field');
 const Model = require('./model');
 const statics = require('./statics');
 const Types = require('./types');
-const { isUndefined, isNil } = require('./utils');
+const { cloneDeep, isUndefined, isNil } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
 
 function extractDefaults (fields) {
@@ -173,6 +173,7 @@ function modelFactory (instance, name, schema, BaseModel = Model) {
       // set the data directly on document through getters/setters
       this.data = {};
       Object.assign(this, defaults, this.schema.cast(data));
+      this.originalData = cloneDeep(this.data);
     }
   }
 

@@ -1,5 +1,5 @@
 const Schema = require('./schema');
-const { invoke, invokeSeries, isUndefined } = require('./utils');
+const { cloneDeep, invoke, invokeSeries, isUndefined } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
 async function invokeMiddleware (document, hook, middleware, isBlocking) {
@@ -57,6 +57,21 @@ class Model {
     this.isNew = true;
     this.schema = defaultSchema;
     this.subSchema = defaultSchema;
+  }
+
+  isModified (fieldName) {
+    const field = this.schema.fields[fieldName];
+    if (!field) {
+      return false;
+    }
+    if (this.isNew) {
+      return true;
+    }
+
+    const originalValue = this.originalData[fieldName];
+    const currentValue = this.data[fieldName];
+
+    return !field.type.isEqual(originalValue, currentValue);
   }
 
   toObject () {
@@ -133,6 +148,8 @@ class Model {
     } else {
       await client.transaction((trx) => upsert(trx, this));
     }
+
+    this.originalData = cloneDeep(this.data);
 
     invokeMiddleware(this, hook, post, false);
 
