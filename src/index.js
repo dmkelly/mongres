@@ -10,7 +10,6 @@ function createModel (instance, name, schema) {
     throw new Error(`Model "${name}" already exists`);
   }
   const Model = modelFactory(instance, name, schema);
-  instance.models.set(name, Model);
   return Model;
 }
 

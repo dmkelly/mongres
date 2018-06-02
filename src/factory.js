@@ -1,9 +1,8 @@
 const Field = require('./field');
 const Model = require('./model');
-const Query = require('./query');
-const Schema = require('./schema');
+const statics = require('./statics');
 const Types = require('./types');
-const { castError, isUndefined, isNil } = require('./utils');
+const { isUndefined, isNil } = require('./utils');
 const { sanitizeName } = require('./lib/tables');
 
 function extractDefaults (fields) {
@@ -20,151 +19,74 @@ function extractDefaults (fields) {
 function attachCore (Model, instance) {
   Model.instance = instance;
 
-  Model.create = async function (data, { transaction } = {}) {
-    const client = instance.client;
-    const document = new Model(data);
-    await document.validate();
-
-    let result;
-    let query = client.table(Model.tableName)
-      .insert(document.data, 'id');
-    if (transaction) {
-      query = query.transacting(transaction);
-    }
-
-    try {
-      result = await query;
-    } catch (err) {
-      throw castError(err);
-    }
-
-    document.id = result[0];
-    return document;
-  };
+  Object.keys(statics).forEach((key) => {
+    Model[key] = statics[key](Model, instance);
+  });
 
   Model.discriminator = function (modelName, schema) {
-    if (!schema.fields[Model.tableName]) {
-      schema.fields[Model.tableName] = {
-        type: Types.Integer(),
-        ref: Model.modelName
-      };
-    }
+    const { discriminatorKey = 'type' } = schema.options;
 
-    const fullSchema = new Schema(Object.assign(
-      {},
-      Model.schema.fields,
-      schema.fields,
-      {
-        [schema.options.discriminatorKey || 'type']: {
+    if (!schema.fields[Model.tableName]) {
+      schema.fields[Model.tableName] = new Field(
+        schema,
+        Model.tableName,
+        {
+          type: Types.Integer()
+        }
+      );
+    }
+    if (!schema.fields[discriminatorKey]) {
+      schema.fields[discriminatorKey] = new Field(
+        Model.subSchema,
+        discriminatorKey,
+        {
+          default: modelName,
           type: Types.String(63)
         }
-      }
-    ));
-
-    class Item extends Model {
-      constructor (...args) {
-        super(...args);
-
-        const [data] = args;
-
-        this.Parent = Model;
-        this.childSchema = schema;
-        this.schema = fullSchema;
-        this.schema.instance = instance;
-        const defaults = extractDefaults(this.schema.fields);
-        this.data = Object.assign({}, defaults, this.schema.cast(data));
-      }
+      );
+    }
+    if (!Model.subSchema.fields[discriminatorKey]) {
+      Model.subSchema.fields[discriminatorKey] = new Field(
+        Model.subSchema,
+        discriminatorKey,
+        {
+          type: Types.String(63)
+        }
+      );
+    }
+    if (!Model.schema.fields[discriminatorKey]) {
+      Model.schema.fields[discriminatorKey] = new Field(
+        Model.schema,
+        discriminatorKey,
+        {
+          type: Types.String(63)
+        }
+      );
     }
 
-    Item.modelName = modelName;
-    Item.tableName = sanitizeName(modelName);
-    Item.schema = fullSchema;
-    Item.schema.instance = instance;
-    Item.prototype.Model = Item;
+    const Item = modelFactory(instance, modelName, schema, Model);
+
+    Item.prototype.Parent = Model;
+
+    Item.prototype.asParent = function () {
+      const parentData = Object.keys(this.Parent.schema.fields)
+        .reduce((data, fieldName) => {
+          data[fieldName] = this[fieldName];
+          return data;
+        }, {});
+
+      return new this.Parent(parentData);
+    };
+
     Item.Parent = Model;
+    Item.discriminatorKey = discriminatorKey;
 
-    const properties = Object.keys(schema.fields);
-    properties.forEach((fieldName) => {
-      Object.defineProperty(Item.prototype, fieldName, {
-        get: function () {
-          return this.data[fieldName];
-        },
-        set: function (value) {
-          const field = schema.fields[fieldName];
-          if (field.ref) {
-            const Ref = instance.model(field.ref);
-            if (value instanceof Ref) {
-              this.data[fieldName] = value;
-              return;
-            }
-          }
+    Model.isParent = true;
+    Model.discriminatorKey = discriminatorKey;
 
-          const cleaned = field.cast(value);
-          if (!isUndefined(cleaned)) {
-            this.data[fieldName] = cleaned;
-          }
-        }
-      });
-    });
-
-    attachCore(Item, instance);
-    attachMethods(Item, schema);
-    attachStatics(Item, schema);
-    attachVirtuals(Item, schema);
+    attachProperties(Model, instance, schema);
 
     return Item;
-  };
-
-  Model.find = function (filters = {}) {
-    return new Query(Model, {}).where(filters);
-  };
-
-  Model.findOne = function (filters = {}) {
-    return new Query(Model, {
-      single: true
-    })
-      .where(filters);
-  };
-
-  Model.findById = async function (id) {
-    id = Model.schema.fields.id.cast(id);
-    if (isNil(id)) {
-      return await null;
-    }
-    return await Model.findOne({ id });
-  };
-
-  Model.remove = async function (filters, { transaction } = {}) {
-    if (!filters) {
-      throw await new Error('Model.remove() requires conditions');
-    }
-    const client = instance.client;
-    let query = client.table(Model.tableName)
-      .where(filters)
-      .del();
-    if (transaction) {
-      query = query.transacting(transaction);
-    }
-
-    const result = await query;
-    return {
-      nModified: result
-    };
-  };
-
-  Model.update = async function (filters, changes, { transaction } = {}) {
-    const client = instance.client;
-    let query = client.table(Model.tableName)
-      .update(changes)
-      .where(filters);
-    if (transaction) {
-      query = query.transacting(transaction);
-    }
-
-    const result = await query;
-    return {
-      nModified: result
-    };
   };
 }
 
@@ -185,6 +107,7 @@ function attachStatics (Model, schema) {
 function attachVirtuals (Model, schema) {
   for (let virtual of schema.virtuals.values()) {
     Object.defineProperty(Model.prototype, virtual.name, {
+      enumerable: true,
       get: function () {
         if (virtual.getter) {
           return virtual.getter.call(this);
@@ -199,16 +122,53 @@ function attachVirtuals (Model, schema) {
   }
 }
 
-function modelFactory (instance, name, schema) {
-  class Item extends Model {
+function attachProperties (Model, instance, schema) {
+  const properties = Object.keys(schema.fields);
+  properties.forEach((fieldName) => {
+    if (!Model.prototype.hasOwnProperty(fieldName)) {
+      Object.defineProperty(Model.prototype, fieldName, {
+        enumerable: true,
+        get: function () {
+          return this.data[fieldName];
+        },
+        set: function (value) {
+          const field = schema.fields[fieldName];
+          if (field.ref) {
+            const Ref = instance.model(field.ref);
+            if (value instanceof Ref) {
+              this.data[fieldName] = value;
+              return;
+            }
+          }
+
+          const cleaned = field.cast(value);
+          if (!isUndefined(cleaned)) {
+            this.data[fieldName] = cleaned;
+          }
+        }
+      });
+    }
+  });
+}
+
+function modelFactory (instance, name, schema, BaseModel = Model) {
+  const parentSchema = BaseModel.schema;
+  const subSchema = schema;
+  const fullSchema = parentSchema.extend(schema);
+  subSchema.instance = instance;
+  schema.instance = instance;
+  fullSchema.instance = instance;
+
+  class Item extends BaseModel {
     constructor (...args) {
       super(...args);
 
       const [data] = args;
 
       this.instance = instance;
-      this.schema = schema;
-      this.schema.instance = instance;
+      this.parentSchema = parentSchema;
+      this.subSchema = subSchema;
+      this.schema = fullSchema;
       const defaults = extractDefaults(this.schema.fields);
       this.data = Object.assign({}, defaults, this.schema.cast(data));
     }
@@ -216,44 +176,19 @@ function modelFactory (instance, name, schema) {
 
   Item.modelName = name;
   Item.tableName = sanitizeName(name);
-  Item.schema = schema;
-  Item.schema.instance = instance;
+  Item.schema = fullSchema;
+  Item.subSchema = subSchema;
+  Item.parentSchema = parentSchema;
   Item.prototype.Model = Item;
+  Item.prototype.Model.tableName = Item.tableName;
 
-  if (!schema.fields.id) {
-    schema.fields.id = new Field(schema, 'id', {
-      type: Types.Id()
-    });
-  }
-
-  const properties = Object.keys(schema.fields);
-  properties.forEach((fieldName) => {
-    Object.defineProperty(Item.prototype, fieldName, {
-      get: function () {
-        return this.data[fieldName];
-      },
-      set: function (value) {
-        const field = schema.fields[fieldName];
-        if (field.ref) {
-          const Ref = instance.model(field.ref);
-          if (value instanceof Ref) {
-            this.data[fieldName] = value;
-            return;
-          }
-        }
-
-        const cleaned = field.cast(value);
-        if (!isUndefined(cleaned)) {
-          this.data[fieldName] = cleaned;
-        }
-      }
-    });
-  });
-
+  attachProperties(Item, instance, schema);
   attachCore(Item, instance);
   attachMethods(Item, schema);
   attachStatics(Item, schema);
   attachVirtuals(Item, schema);
+
+  instance.models.set(name, Item);
 
   return Item;
 }

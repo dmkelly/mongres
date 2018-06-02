@@ -9,8 +9,8 @@ function getBackRefFields (Model, schema) {
   return backRefFields;
 }
 
-function serialize (document) {
-  const { instance, schema } = document;
+function serialize (document, schema) {
+  const { instance } = document;
   const data = Object.keys(schema.fields)
     .reduce((data, fieldName) => {
       const field = schema.fields[fieldName];
@@ -19,7 +19,7 @@ function serialize (document) {
       if (field.ref) {
         const Ref = instance.model(field.ref);
         if (Ref && value instanceof Ref) {
-          data[fieldName] = value.id;
+          data[field.columnName] = value.id;
           return data;
         }
       }
@@ -28,7 +28,7 @@ function serialize (document) {
         return data;
       }
 
-      data[fieldName] = value;
+      data[field.columnName] = value;
       return data;
     }, {});
   return data;

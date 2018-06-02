@@ -3,15 +3,22 @@ const { error, Mongres, Schema } = require('../../../../src');
 
 describe('model/discriminator/classFunctions', () => {
   let mongres;
-  let Square;
-  let Widget;
-  let Gadget;
+  let Shape;
+  let Rectangle;
+  let Circle;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
-    Square = mongres.model('Square', new Schema({
+
+    Shape = mongres.model('Shape', new Schema({
+      area: {
+        type: Schema.Types.Integer()
+      }
+    }));
+
+    Rectangle = Shape.discriminator('Rectangle', new Schema({
       height: {
         type: Schema.Types.Integer()
       },
@@ -20,13 +27,10 @@ describe('model/discriminator/classFunctions', () => {
         type: Schema.Types.Integer()
       }
     }));
-    Widget = mongres.model('Widget', new Schema({
-      height: {
-        type: Schema.Types.Integer()
-      }
-    }));
-    Gadget = Widget.discriminator('Gadget', new Schema({
-      weight: {
+
+    Circle = Shape.discriminator('Circle', new Schema({
+      diameter: {
+        required: true,
         type: Schema.Types.Integer()
       }
     }));
@@ -39,28 +43,41 @@ describe('model/discriminator/classFunctions', () => {
   });
 
   describe('#create()', () => {
-    it('Inserts a new record', async () => {
-      await Widget.create({
-        height: 7
+    it('Inserts a new record in both the base and child tables', async () => {
+      await Rectangle.create({
+        area: 6,
+        height: 2,
+        width: 3
       });
-      const records = await helpers.query.find(Widget.tableName);
-      expect(records.length).to.equal(1);
+      const shapeRecords = await helpers.query.find(Shape.tableName);
+      const rectangleRecords = await helpers.query.find(Rectangle.tableName);
+      expect(shapeRecords.length).to.equal(1);
+      expect(shapeRecords[0].area).to.equal(6);
+      expect(rectangleRecords.length).to.equal(1);
+      expect(rectangleRecords[0].height).to.equal(2);
+      expect(rectangleRecords[0].width).to.equal(3);
     });
 
     it('Returns the created document', async () => {
-      const widget = await Widget.create({
-        height: 7
+      const rectangle = await Rectangle.create({
+        area: 6,
+        height: 2,
+        width: 3
       });
-      expect(widget).to.be.instanceof(Widget);
-      expect(widget.id).to.equal(1);
+      expect(rectangle).to.be.instanceof(Rectangle);
+      expect(rectangle.id).to.equal(1);
+      expect(rectangle.area).to.equal(6);
+      expect(rectangle.height).to.equal(2);
+      expect(rectangle.width).to.equal(3);
     });
 
     it('Validates before saving', async () => {
-      expect(Square.create({
-        height: 5
+      expect(Rectangle.create({
+        height: 5,
+        area: 5
       })).to.be.rejectedWith(error.ValidationError);
 
-      const records = await helpers.query.find(Square.tableName);
+      const records = await helpers.query.find(Rectangle.tableName);
       expect(records.length).to.equal(0);
     });
 
@@ -68,70 +85,94 @@ describe('model/discriminator/classFunctions', () => {
       let existing;
 
       beforeEach(async () => {
-        existing = await Widget.create({
-          height: 7
+        existing = await Rectangle.create({
+          height: 7,
+          width: 5,
+          area: 35
         });
       });
 
       it('Throws a ConflictError', () => {
-        expect(Widget.create({
+        expect(Rectangle.create({
           id: existing.id,
-          height: 2
+          height: 2,
+          width: 4,
+          area: 8
         })).to.be.rejectedWith(error.ConflictError);
       });
-    });
-  });
-
-  describe('#discriminator()', () => {
-    it('Creates a subclass of the parent', () => {
-      const gadget = new Gadget();
-      expect(gadget).to.be.instanceof(Gadget);
-      expect(gadget).to.be.instanceof(Widget);
     });
   });
 
   describe('#find()', () => {
     beforeEach(() => {
       return Promise.all([
-        new Widget({
-          height: 5
+        new Rectangle({
+          height: 5,
+          width: 1,
+          area: 5
         }).save(),
-        new Widget({
-          height: 10
+        new Rectangle({
+          height: 10,
+          width: 4,
+          area: 40
+        }).save(),
+        new Circle({
+          area: 40,
+          diameter: Math.round(40 / (2 * Math.PI))
         }).save()
       ]);
     });
 
     it('Finds all items', async () => {
-      const results = await Widget.find();
+      const results = await Rectangle.find();
       expect(results.length).to.equal(2);
-      expect(results[0]).to.be.instanceof(Widget);
-      expect(results[1]).to.be.instanceof(Widget);
+      expect(results[0]).to.be.instanceof(Rectangle);
+      expect(results[1]).to.be.instanceof(Rectangle);
+    });
+
+    it('Includes all fields', async () => {
+      const results = await Rectangle.find();
+      expect(results.length).to.equal(2);
+      expect(results[0]).to.be.instanceof(Rectangle);
+      expect(results[1]).to.be.instanceof(Rectangle);
+      expect(results[0].height).to.be.a('number');
+      expect(results[0].width).to.be.a('number');
+      expect(results[0].area).to.be.a('number');
+      expect(results[1].height).to.be.a('number');
+      expect(results[1].width).to.be.a('number');
+      expect(results[1].area).to.be.a('number');
     });
 
     it('Supports filters', async () => {
-      const results = await Widget.find({
+      const results = await Rectangle.find({
         height: 5
       });
       expect(results.length).to.equal(1);
     });
 
+    it('Supports filters on the parent schema', async () => {
+      const results = await Rectangle.find({
+        area: 40
+      });
+      expect(results.length).to.equal(1);
+    });
+
     it('Handles empty result sets', async () => {
-      const results = await Widget.find({
+      const results = await Rectangle.find({
         height: 2
       });
       expect(results.length).to.equal(0);
     });
 
     it('Ignores invalid filters', async () => {
-      const results = await Widget.find({
+      const results = await Rectangle.find({
         badField: 100
       });
       expect(results.length).to.equal(2);
     });
 
     it('Supports chaining', async () => {
-      const results = await Widget.find()
+      const results = await Rectangle.find()
         .where({
           height: 5
         })
@@ -144,119 +185,167 @@ describe('model/discriminator/classFunctions', () => {
   describe('#findOne()', () => {
     beforeEach(() => {
       return Promise.all([
-        new Widget({
-          height: 5
+        new Rectangle({
+          height: 5,
+          width: 2,
+          area: 10
         }).save(),
-        new Widget({
-          height: 10
+        new Rectangle({
+          height: 10,
+          width: 4,
+          area: 40
+        }).save(),
+        new Circle({
+          area: 40,
+          diameter: Math.round(40 / (2 * Math.PI))
         }).save()
       ]);
     });
 
     it('Finds the first matching item', async () => {
-      const result = await Widget.findOne();
-      expect(result).to.be.instanceof(Widget);
+      const result = await Rectangle.findOne();
+      expect(result).to.be.instanceof(Rectangle);
+      expect(result).to.be.instanceof(Shape);
     });
 
     it('Supports filters', async () => {
-      const result = await Widget.findOne({
+      const result = await Rectangle.findOne({
         height: 5
       });
-      expect(result).to.be.instanceof(Widget);
+      expect(result).to.be.instanceof(Rectangle);
     });
 
     it('Handles no results', async () => {
-      const result = await Widget.findOne({
+      const result = await Rectangle.findOne({
         height: 2
       });
       expect(result).not.to.be.ok;
     });
 
     it('Ignores invalid filters', async () => {
-      const result = await Widget.findOne({
-        badField: 100
+      const result = await Rectangle.findOne({
+        diameter: 6
       });
-      expect(result).to.be.instanceof(Widget);
+      expect(result).to.be.instanceof(Rectangle);
     });
 
     it('Supports chaining', async () => {
-      const result = await Widget.findOne()
+      const result = await Rectangle.findOne()
         .where({
           height: 5
         })
         .sort('-height');
-      expect(result).to.be.instanceof(Widget);
+      expect(result).to.be.instanceof(Rectangle);
     });
   });
 
   describe('#findById()', () => {
-    let widgetA;
-    let widgetB;
+    let rectangleA;
+    let rectangleB;
 
     beforeEach(async () => {
-      widgetA = await new Widget({
-        height: 5
+      rectangleA = await new Rectangle({
+        height: 5,
+        width: 2,
+        area: 10
       }).save();
-      widgetB = await new Widget({
-        height: 10
+      rectangleB = await new Rectangle({
+        height: 10,
+        width: 4,
+        area: 40
+      }).save();
+      await new Circle({
+        area: 40,
+        diameter: Math.round(40 / (2 * Math.PI))
       }).save();
     });
 
     it('Finds the item by ID', async () => {
-      let resultA = await Widget.findById(widgetA.id);
-      expect(resultA.id).to.equal(widgetA.id);
-      expect(resultA.height).to.equal(widgetA.height);
+      let resultA = await Rectangle.findById(rectangleA.id);
+      expect(resultA.id).to.equal(rectangleA.id);
+      expect(resultA.height).to.equal(rectangleA.height);
 
-      let resultB = await Widget.findById(widgetB.id);
-      expect(resultB.id).to.equal(widgetB.id);
-      expect(resultB.height).to.equal(widgetB.height);
+      let resultB = await Rectangle.findById(rectangleB.id);
+      expect(resultB.id).to.equal(rectangleB.id);
+      expect(resultB.height).to.equal(rectangleB.height);
     });
 
     it('Handles when the ID has no match', async () => {
-      const result = await Widget.findById(7);
+      const result = await Rectangle.findById(7);
       expect(result).not.to.be.ok;
     });
 
     it('Casts the ID to the correct type', async () => {
-      const result = await Widget.findById(`${widgetA.id}`);
-      expect(result.id).to.equal(widgetA.id);
+      const result = await Rectangle.findById(`${rectangleA.id}`);
+      expect(result.id).to.equal(rectangleA.id);
     });
   });
 
   describe('#remove()', () => {
     beforeEach(() => {
       return Promise.all([
-        new Widget({
-          height: 5
+        new Rectangle({
+          height: 5,
+          width: 1,
+          area: 5
         }).save(),
-        new Widget({
-          height: 10
+        new Rectangle({
+          height: 10,
+          width: 4,
+          area: 40
+        }).save(),
+        new Circle({
+          area: 40,
+          diameter: Math.round(40 / (2 * Math.PI))
         }).save()
       ]);
     });
 
     it('Can remove multiple items at once', async () => {
-      await Widget.remove({});
-      const count = await helpers.query.count(Widget.tableName);
-      expect(count).to.equal(0);
+      await Rectangle.remove({});
+      const rectangleCount = await helpers.query.count(Rectangle.tableName);
+      expect(rectangleCount).to.equal(0);
+      const parentCount = await helpers.query.count(Shape.tableName);
+      expect(parentCount).to.equal(1);
     });
 
     it('Removes only items matching the filters', async () => {
-      await Widget.remove({
+      await Rectangle.remove({
         height: 10
       });
-      const count = await helpers.query.count(Widget.tableName);
+      const count = await helpers.query.count(Rectangle.tableName);
       expect(count).to.equal(1);
 
-      const removedItem = await Widget.findOne({
+      const removedItem = await Rectangle.findOne({
         height: 10
       });
       expect(removedItem).not.to.be.ok;
 
-      const remainingItem = await Widget.findOne({
+      const remainingItem = await Rectangle.findOne({
         height: 5
       });
       expect(remainingItem).to.be.ok;
+    });
+
+    it('Removes items when criteria span ancestors', async () => {
+      await Rectangle.remove({
+        area: 40
+      });
+      const count = await helpers.query.count(Rectangle.tableName);
+      expect(count).to.equal(1);
+
+      const removedItem = await Rectangle.findOne({
+        height: 10
+      });
+      expect(removedItem).not.to.be.ok;
+
+      const remainingItem = await Rectangle.findOne({
+        height: 5
+      });
+      expect(remainingItem).to.be.ok;
+
+      const circleCount = await helpers.query.count(Circle.tableName);
+      expect(circleCount).to.equal(1);
     });
   });
 });

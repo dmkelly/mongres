@@ -7,6 +7,11 @@ const { ValidationError } = require('./error');
 
 class Schema {
   constructor (fields, options = {}) {
+    if (!fields.id) {
+      fields.id = {
+        type: Types.Id()
+      };
+    }
     this.fields = Object.entries(fields)
       .reduce((lookup, [fieldName, definition]) => {
         lookup[fieldName] = new Field(this, fieldName, definition);
@@ -42,6 +47,32 @@ class Schema {
       }, {});
   }
 
+  extend (...schemas) {
+    const existingDefinitions = Object.keys(this.fields)
+      .reduce((definitions, key) => {
+        const field = this.fields[key];
+        definitions[key] = field.definition;
+        return definitions;
+      }, {});
+
+    const schema = new Schema(Object.assign(
+      {},
+      existingDefinitions,
+      ...schemas.map(schema => schema.toFields())
+    ));
+
+    schema.middleware = [this, ...schemas].reduce((middleware, schema) => {
+      middleware.pre = middleware.pre.concat(schema.middleware.pre.slice());
+      middleware.post = middleware.post.concat(schema.middleware.post.slice());
+      return middleware;
+    }, schema.middleware);
+    schema.methods = Object.assign({}, this.methods);
+    schema.statics = Object.assign({}, this.statics);
+    schema.virtuals = new Map(this.virtuals);
+
+    return schema;
+  }
+
   pre (hook, callback) {
     this.middleware.pre.push(new Middleware(hook, callback));
     return this;
@@ -50,6 +81,14 @@ class Schema {
   post (hook, callback) {
     this.middleware.post.push(new Middleware(hook, callback));
     return this;
+  }
+
+  toFields () {
+    return Object.entries(this.fields)
+      .reduce((definition, [fieldName, field]) => {
+        definition[fieldName] = field.definition;
+        return definition;
+      }, {});
   }
 
   validate (data) {

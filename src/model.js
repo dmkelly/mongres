@@ -1,3 +1,4 @@
+const Schema = require('./schema');
 const { invoke, invokeSeries, isUndefined } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
@@ -10,7 +11,7 @@ async function invokeMiddleware (document, hook, middleware, isBlocking) {
 }
 
 async function saveNestedFields (transaction, document) {
-  const fields = Object.values(document.schema.fields);
+  const fields = Object.values(document.subSchema.fields);
   for (let field of fields) {
     if (field.isNested) {
       const values = document[field.fieldName];
@@ -27,8 +28,14 @@ async function saveNestedFields (transaction, document) {
 }
 
 async function upsert (transaction, document) {
-  const data = serialize(document);
+  if (document.Parent) {
+    const parentDocument = new document.Parent(document.toObject());
+    parentDocument.isNew = document.isNew;
+    await parentDocument.save({ transaction });
+    document[document.Parent.tableName] = parentDocument.id;
+  }
 
+  const data = serialize(document, document.subSchema);
   if (document.isNew) {
     document.id = await transaction.insert(data)
       .into(document.Model.tableName)
@@ -43,9 +50,13 @@ async function upsert (transaction, document) {
   await saveNestedFields(transaction, document);
 }
 
+const defaultSchema = new Schema({});
+
 class Model {
   constructor () {
     this.isNew = true;
+    this.schema = defaultSchema;
+    this.subSchema = defaultSchema;
   }
 
   toObject () {
@@ -113,6 +124,10 @@ class Model {
 
     const client = this.instance.client;
 
+    if (this.Parent) {
+      this[this.Parent.tableName] = this.id;
+    }
+
     if (transaction) {
       await upsert(transaction, this);
     } else {
@@ -133,5 +148,7 @@ class Model {
     invokeMiddleware(this, hook, post, false);
   }
 }
+
+Model.schema = defaultSchema;
 
 module.exports = Model;

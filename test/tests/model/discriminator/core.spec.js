@@ -2,173 +2,172 @@ const { Model, Mongres, Schema } = require('../../../../src');
 
 describe('model/discriminator/core', () => {
   let mongres;
+  let Shape;
+  let Rectangle;
 
   beforeEach(() => {
     mongres = new Mongres();
+
+    const shapeSchema = new Schema({
+      area: {
+        type: Schema.Types.Integer()
+      }
+    });
+
+    shapeSchema.statics.add1 = function (number) {
+      return number + 1;
+    };
+
+    shapeSchema.methods.doubleArea = function () {
+      return this.area * 2;
+    };
+
+    const rectangleSchema = new Schema({
+      height: {
+        type: Schema.Types.Integer()
+      },
+      width: {
+        required: true,
+        type: Schema.Types.Integer()
+      }
+    });
+
+    rectangleSchema.statics.add2 = function (number) {
+      return number + 2;
+    };
+
+    rectangleSchema.methods.doubleHeight = function () {
+      return this.height * 2;
+    };
+
+    const circleSchema = new Schema({
+      diameter: {
+        required: true,
+        type: Schema.Types.Integer()
+      }
+    });
+
+    circleSchema.statics.add3 = function (number) {
+      return number + 3;
+    };
+
+    circleSchema.methods.doubleDiameter = function () {
+      return this.diameter * 2;
+    };
+
+    Shape = mongres.model('Shape', shapeSchema);
+
+    Rectangle = Shape.discriminator('Rectangle', rectangleSchema);
+
+    Shape.discriminator('Circle', circleSchema);
   });
 
   describe('#constructor()', () => {
-    let Widget;
-
-    beforeEach(() => {
-      Widget = mongres.model('Widget', new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      }));
+    it('Creates new child of the model', () => {
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
+      });
+      expect(rectangle).to.be.instanceOf(Rectangle);
+      expect(rectangle).to.be.instanceOf(Shape);
+      expect(rectangle).to.be.instanceOf(Model);
     });
 
-    it('Creates new model', () => {
-      const widget = new Widget({
-        height: 5
+    it('Provides access to data on its parent and child schemas', () => {
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
       });
-      expect(widget).to.be.instanceOf(Widget);
-      expect(widget).to.be.instanceOf(Model);
-    });
-
-    it('Provides access to its data', () => {
-      const widget = new Widget({
-        height: 5
-      });
-      expect(widget.toObject()).to.deep.equal({
-        height: 5
+      expect(rectangle.toObject()).to.deep.equal({
+        height: 3,
+        width: 4,
+        area: 12,
+        type: 'Rectangle'
       });
     });
   });
 
   describe('getters', () => {
-    let Widget;
-
-    beforeEach(() => {
-      Widget = mongres.model('Widget', new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      }));
-    });
-
     it('Provides top-level properties to access the data', () => {
-      const widget = new Widget({
-        height: 5
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
       });
-      expect(widget.height).to.equal(5);
-    });
-
-    it('Getters are specific to the instance', () => {
-      const smallWidget = new Widget({
-        height: 1
-      });
-      const widget = new Widget({
-        height: 5
-      });
-      expect(smallWidget.height).to.equal(1);
-      expect(widget.height).to.equal(5);
+      expect(rectangle.height).to.equal(3);
+      expect(rectangle.width).to.equal(4);
+      expect(rectangle.area).to.equal(12);
     });
   });
 
   describe('setters', () => {
-    let Widget;
-
-    beforeEach(() => {
-      Widget = mongres.model('Widget', new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      }));
-    });
-
     it('Provides top-level properties to modify the data', () => {
-      const widget = new Widget({
-        height: 5
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
       });
-      widget.height = 10;
-      expect(widget.height).to.equal(10);
-    });
-
-    it('Setters are specific to the instance', () => {
-      const smallWidget = new Widget({
-        height: 1
-      });
-      const widget = new Widget({
-        height: 5
-      });
-      smallWidget.height = 2;
-      widget.height = 10;
-      expect(smallWidget.height).to.equal(2);
-      expect(widget.height).to.equal(10);
+      rectangle.height = 10;
+      rectangle.area = 40;
+      expect(rectangle.height).to.equal(10);
+      expect(rectangle.area).to.equal(40);
     });
 
     it('Only applies the value if it matches the type', () => {
-      const widget = new Widget({
-        height: 5
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
       });
-      widget.height = 'bad';
-      expect(widget.height).to.equal(5);
+      rectangle.height = 'bad';
+      rectangle.area = 'bad';
+      expect(rectangle.height).to.equal(3);
+      expect(rectangle.area).to.equal(12);
     });
   });
 
   describe('methods', () => {
-    let Widget;
-
-    beforeEach(() => {
-      const schema = new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
+    it('Supports attaching instance methods via the schema', () => {
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
       });
-      schema.methods.testMethod = function (amount) {
-        return this.height + amount;
-      };
-
-      Widget = mongres.model('Widget', schema);
+      expect(rectangle.doubleHeight()).to.equal(6);
     });
 
-    it('Supports attaching instance methods via the schema', () => {
-      const widget = new Widget({
-        height: 5
+    it('Inherits instance methods from parent schema', () => {
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
       });
-      expect(widget.testMethod(2)).to.equal(7);
+      expect(rectangle.doubleArea()).to.equal(24);
+    });
+
+    it('Does not attach methods of sibling schemas', () => {
+      const rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
+      });
+      expect(rectangle.doubleDiameter).to.be.undefined;
     });
   });
 
   describe('statics', () => {
-    let Widget;
-
-    beforeEach(() => {
-      const schema = new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      });
-      schema.statics.testStatic = function (amount) {
-        return this.tableName + amount;
-      };
-
-      Widget = mongres.model('Widget', schema);
+    it('Supports attaching statics to the schema', () => {
+      expect(Rectangle.add2(1)).to.equal(3);
     });
 
-    it('Supports attaching static functions to the schema', () => {
-      expect(Widget.testStatic(2)).to.equal('widget2');
-    });
-  });
-
-  describe('defaults', () => {
-    let Widget;
-
-    beforeEach(() => {
-      const schema = new Schema({
-        height: {
-          type: Schema.Types.Integer(),
-          default: 5
-        }
-      });
-
-      Widget = mongres.model('Widget', schema);
+    it('Supports attaching statics from the parent schema', () => {
+      expect(Rectangle.add1(1)).to.equal(2);
     });
 
-    it('Defaults are applied if no value is specified', () => {
-      const widget = new Widget();
-      expect(widget.height).to.equal(5);
+    it('Does not attach statics from sibling schemas', () => {
+      expect(Rectangle.add3).to.be.undefined;
     });
   });
 });

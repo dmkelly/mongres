@@ -1,68 +1,19 @@
-const { getTableModel, normalizeSortArgs, getWhereBuilder } = require('./lib/query');
+const {
+  ensureColumnNamespace,
+  getFieldsList,
+  getWhereBuilder,
+  normalizeSortArgs,
+  toColumns,
+  toModel
+} = require('./lib/query');
 const { getBackRefFields } = require('./lib/model');
-const { isFunction, pick, setIn } = require('./utils');
+const { isFunction, pick } = require('./utils');
 
 class Join {
   constructor ({ fieldName, Model }) {
     this.fieldName = fieldName;
     this.Model = Model;
   }
-}
-
-function ensureColumnNamespace (fieldName, Model) {
-  if (fieldName.includes('.')) {
-    return fieldName;
-  }
-  return `${Model.tableName}.${fieldName}`;
-}
-
-function getFieldsList (Model) {
-  return Object.values(Model.schema.fields)
-    .map((field) => {
-      if (field.isNested) {
-        return null;
-      }
-      return ensureColumnNamespace(field.columnName, Model);
-    })
-    .filter(Boolean);
-}
-
-function toColumns (fieldsList) {
-  return fieldsList.map(field => {
-    const obj = {};
-    obj[field] = field;
-    return obj;
-  });
-}
-
-function toModel (record, query) {
-  const lookups = Object.entries(record)
-    .reduce((lookup, [columnName, value]) => {
-      setIn(lookup, columnName, value);
-      return lookup;
-    }, {});
-  const documents = Object.entries(lookups)
-    .reduce((documents, [tableName, record]) => {
-      const Model = getTableModel(query, tableName);
-
-      if (!Model) {
-        return documents;
-      }
-
-      const document = new Model(record);
-      document.isNew = false;
-
-      documents[tableName] = document;
-
-      return documents;
-    }, {});
-  const baseDoc = documents[query.Model.tableName];
-  Object.values(query.joins)
-    .forEach((join) => {
-      baseDoc[join.fieldName] = documents[join.Model.tableName];
-    });
-
-  return baseDoc;
 }
 
 class Query {
@@ -79,6 +30,10 @@ class Query {
       this.query = this.query.limit(1);
     }
 
+    if (this.Model.Parent) {
+      this.populate(this.Model.Parent.tableName);
+    }
+
     return this;
   }
 
@@ -92,11 +47,17 @@ class Query {
   populate (fieldName) {
     const schema = this.Model.schema;
     const field = schema.fields[fieldName];
-    if (!field || !field.ref) {
+    const refExists = !!(field && field.ref);
+    const parentExists = !!(field && this.Model.Parent);
+    const isParent = parentExists && fieldName === this.Model.Parent.tableName;
+
+    if (!refExists && !isParent) {
       return this;
     }
 
-    const Ref = this.Model.instance.model(field.ref);
+    const Ref = isParent
+      ? this.Model.Parent
+      : this.Model.instance.model(field.ref);
     if (!Ref) {
       return this;
     }
@@ -144,7 +105,8 @@ class Query {
 
     this.query = Object.entries(filters)
       .reduce((query, [fieldName, filter]) => {
-        const columnName = ensureColumnNamespace(fieldName, this.Model);
+        const field = schema.fields[fieldName];
+        const columnName = ensureColumnNamespace(field, this.Model);
         return query.where(getWhereBuilder(this, columnName, filter));
       }, this.query);
 
@@ -184,6 +146,7 @@ class Query {
             const attachKey = `${this.Model.tableName}.${field.fieldName}`;
             record[attachKey] = results;
           }
+
           return toModel(record, this);
         });
       })
