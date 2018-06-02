@@ -126,6 +126,12 @@ describe('model/instanceFunctions', () => {
       line.end = 6;
       await expect(line.validate()).not.to.be.rejectedWith(error.ValidationError);
     });
+
+    it('Handles when the populated document does not exist', async () => {
+      line.start = 1000;
+      await line.populate('start');
+      expect(line.start).to.equal(1000);
+    });
   });
 
   describe('#remove()', () => {

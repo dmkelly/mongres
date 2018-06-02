@@ -1,4 +1,8 @@
 const constraintDescriptions = require('./constraints');
+const SubClassConstraint = require('./constraints/subClass');
+const MultiUniqueConstraint = require('./constraints/multiUnique');
+const Field = require('../field');
+const Types = require('../types');
 const { sanitizeName } = require('../utils');
 
 function defineField (table, fieldName, field) {
@@ -23,7 +27,7 @@ async function createTable (instance, Model) {
 
   if (!tableExists) {
     await dbSchema.createTable(Model.tableName, function (table) {
-      defineTable(table, Model.schema);
+      defineTable(table, Model.subSchema);
     });
   }
 }
@@ -51,7 +55,7 @@ async function updateForeignKeys (instance) {
 
 async function getConstraints (Model) {
   const constraints = [];
-  const fields = Object.values(Model.schema.fields);
+  const fields = Object.values(Model.subSchema.fields);
 
   for (let i = 0; i < fields.length; i += 1) {
     const field = fields[i];
@@ -70,6 +74,31 @@ async function getConstraints (Model) {
       if (!constraintExists) {
         constraints.push(constraint);
       }
+    }
+  }
+
+  if (Model.Parent) {
+    const constraint = new SubClassConstraint(Model, new Field(
+      Model.subSchema,
+      Model.Parent.tableName,
+      {
+        type: Types.Integer()
+      }
+    ));
+    const constraintExists = await constraint.exists();
+    if (!constraintExists) {
+      constraints.push(constraint);
+    }
+  }
+
+  if (Model.isParent) {
+    const constraint = new MultiUniqueConstraint(Model, [
+      'id',
+      Model.discriminatorKey
+    ]);
+    const constraintExists = await constraint.exists();
+    if (!constraintExists) {
+      constraints.push(constraint);
     }
   }
 

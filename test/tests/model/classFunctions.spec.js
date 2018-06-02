@@ -5,6 +5,7 @@ describe('model/classFunctions', () => {
   let mongres;
   let Square;
   let Widget;
+  let Gadget;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
@@ -21,6 +22,11 @@ describe('model/classFunctions', () => {
     }));
     Widget = mongres.model('Widget', new Schema({
       height: {
+        type: Schema.Types.Integer()
+      }
+    }));
+    Gadget = Widget.discriminator('Gadget', new Schema({
+      weight: {
         type: Schema.Types.Integer()
       }
     }));
@@ -73,6 +79,14 @@ describe('model/classFunctions', () => {
           height: 2
         })).to.be.rejectedWith(error.ConflictError);
       });
+    });
+  });
+
+  describe('#discriminator()', () => {
+    it('Creates a subclass of the parent', () => {
+      const gadget = new Gadget();
+      expect(gadget).to.be.instanceof(Gadget);
+      expect(gadget).to.be.instanceof(Widget);
     });
   });
 

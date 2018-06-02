@@ -1,5 +1,5 @@
 const { ValidationError } = require('../error');
-const { isFunction, isUndefined, template } = require('../utils');
+const { isFunction, isNil, template } = require('../utils');
 
 function getRef (field) {
   if (!field.ref) {
@@ -9,7 +9,7 @@ function getRef (field) {
 }
 
 function validateField (field, value) {
-  if (isUndefined(value)) {
+  if (isNil(value)) {
     if (field.required) {
       throw new ValidationError(`Field ${field.fieldName} is required`, {
         field: field.fieldName
