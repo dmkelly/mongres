@@ -2,7 +2,7 @@ const { isNil, isObject } = require('../utils');
 const Type = require('./type');
 
 class String extends Type {
-  constructor (size = 255) {
+  constructor (size) {
     super();
     this.dataType = 'string';
     this.size = size;
@@ -25,6 +25,9 @@ class String extends Type {
   isValid (value) {
     value = this.cast(value);
     if (isNil(value)) {
+      return true;
+    }
+    if (isNil(this.size)) {
       return true;
     }
     return value.length <= this.size;
