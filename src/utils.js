@@ -44,6 +44,7 @@ module.exports = {
   escapeRegExp,
   invoke,
   invokeSeries,
+  isDate: _.isDate,
   isFunction: _.isFunction,
   isNil: _.isNil,
   isNumber: _.isNumber,
