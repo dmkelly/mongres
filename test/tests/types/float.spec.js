@@ -1,13 +1,13 @@
 const Float = require('../../../src/types/float');
 
 describe('types/Float', () => {
+  let field;
+
+  beforeEach(() => {
+    field = new Float();
+  });
+
   describe('#cast()', () => {
-    let field;
-
-    beforeEach(() => {
-      field = new Float();
-    });
-
     it('Handles numbers', () => {
       expect(field.cast(5)).to.equal(5);
       expect(field.cast(5.5)).to.equal(5.5);
@@ -35,12 +35,6 @@ describe('types/Float', () => {
   });
 
   describe('#isValid()', () => {
-    let field;
-
-    beforeEach(() => {
-      field = new Float();
-    });
-
     it('Ignores nils', () => {
       expect(field.isValid()).to.be.ok;
       expect(field.isValid(null)).to.be.ok;

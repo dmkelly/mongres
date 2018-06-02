@@ -1,20 +1,20 @@
 const String = require('../../../src/types/string');
 
 describe('types/String', () => {
+  let field;
+
+  beforeEach(() => {
+    field = new String(10);
+  });
+
   describe('#cast()', () => {
-    let string;
-
-    beforeEach(() => {
-      string = new String(10);
-    });
-
     it('Handles strings', () => {
-      expect(string.cast('5')).to.equal('5');
-      expect(string.cast('string')).to.equal('string');
+      expect(field.cast('5')).to.equal('5');
+      expect(field.cast('string')).to.equal('string');
     });
 
     it('Handles objects', () => {
-      expect(string.cast({
+      expect(field.cast({
         test: 5
       })).to.equal(JSON.stringify({
         test: 5
@@ -22,38 +22,32 @@ describe('types/String', () => {
     });
 
     it('Correctly handles falsy values', () => {
-      expect(string.cast(null)).to.be.undefined;
-      expect(string.cast()).to.be.undefined;
-      expect(string.cast(0)).to.equal('0');
-      expect(string.cast('')).to.equal('');
-      expect(string.cast(false)).to.equal('false');
+      expect(field.cast(null)).to.be.undefined;
+      expect(field.cast()).to.be.undefined;
+      expect(field.cast(0)).to.equal('0');
+      expect(field.cast('')).to.equal('');
+      expect(field.cast(false)).to.equal('false');
     });
   });
 
   describe('#isValid()', () => {
-    let string;
-
-    beforeEach(() => {
-      string = new String(10);
-    });
-
     it('Ignores nils', () => {
-      expect(string.isValid()).to.be.ok;
-      expect(string.isValid(null)).to.be.ok;
+      expect(field.isValid()).to.be.ok;
+      expect(field.isValid(null)).to.be.ok;
     });
 
     it('Handles things that can be a string', () => {
-      expect(string.isValid(false)).to.be.ok;
-      expect(string.isValid(true)).to.be.ok;
-      expect(string.isValid(5)).to.be.ok;
-      expect(string.isValid('test')).to.be.ok;
-      expect(string.isValid({
+      expect(field.isValid(false)).to.be.ok;
+      expect(field.isValid(true)).to.be.ok;
+      expect(field.isValid(5)).to.be.ok;
+      expect(field.isValid('test')).to.be.ok;
+      expect(field.isValid({
         test: 5
       })).to.be.ok;
     });
 
     it('Rejects values that are too long', () => {
-      expect(string.isValid('a'.repeat(11))).not.to.be.ok;
+      expect(field.isValid('a'.repeat(11))).not.to.be.ok;
     });
   });
 });
