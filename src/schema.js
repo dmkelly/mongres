@@ -2,6 +2,7 @@ const Types = require('./types');
 const { isNil, isUndefined } = require('./utils');
 const Field = require('./field');
 const Middleware = require('./middleware');
+const Modifier = require('./modifier');
 const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
 
@@ -24,6 +25,7 @@ class Schema {
       pre: [],
       post: []
     };
+    this.modifiers = new Map();
     this.virtuals = new Map();
   }
 
@@ -71,6 +73,12 @@ class Schema {
     schema.virtuals = new Map(this.virtuals);
 
     return schema;
+  }
+
+  path (fieldName) {
+    const modifier = new Modifier(fieldName);
+    this.modifiers.set(fieldName, modifier);
+    return modifier;
   }
 
   pre (hook, callback) {

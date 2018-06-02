@@ -14,7 +14,7 @@ function serialize (document, schema) {
   const data = Object.keys(schema.fields)
     .reduce((data, fieldName) => {
       const field = schema.fields[fieldName];
-      const value = document[fieldName];
+      const value = document.data[fieldName];
 
       if (field.ref) {
         const Ref = instance.model(field.ref);

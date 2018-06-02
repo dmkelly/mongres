@@ -87,6 +87,44 @@ function attachMethods (Model, schema) {
     });
 }
 
+function attachProperties (Model, instance, schema) {
+  const properties = Object.keys(schema.fields);
+  properties.forEach((fieldName) => {
+    if (!Model.prototype.hasOwnProperty(fieldName)) {
+      const modifier = schema.modifiers.get(fieldName);
+
+      Object.defineProperty(Model.prototype, fieldName, {
+        enumerable: true,
+        get: function () {
+          const value = this.data[fieldName];
+          if (modifier && modifier.getter) {
+            return modifier.getter.call(this, value);
+          }
+          return value;
+        },
+        set: function (value) {
+          const field = schema.fields[fieldName];
+          if (field.ref) {
+            const Ref = instance.model(field.ref);
+            if (value instanceof Ref) {
+              this.data[fieldName] = value;
+              return;
+            }
+          }
+
+          const cleaned = field.cast(value);
+          if (!isUndefined(cleaned)) {
+            if (modifier && modifier.setter) {
+              return this.data[fieldName] = modifier.setter.call(this, cleaned);
+            }
+            this.data[fieldName] = cleaned;
+          }
+        }
+      });
+    }
+  });
+}
+
 function attachStatics (Model, schema) {
   Object.entries(schema.statics)
     .forEach(([name, fn]) => {
@@ -112,35 +150,6 @@ function attachVirtuals (Model, schema) {
   }
 }
 
-function attachProperties (Model, instance, schema) {
-  const properties = Object.keys(schema.fields);
-  properties.forEach((fieldName) => {
-    if (!Model.prototype.hasOwnProperty(fieldName)) {
-      Object.defineProperty(Model.prototype, fieldName, {
-        enumerable: true,
-        get: function () {
-          return this.data[fieldName];
-        },
-        set: function (value) {
-          const field = schema.fields[fieldName];
-          if (field.ref) {
-            const Ref = instance.model(field.ref);
-            if (value instanceof Ref) {
-              this.data[fieldName] = value;
-              return;
-            }
-          }
-
-          const cleaned = field.cast(value);
-          if (!isUndefined(cleaned)) {
-            this.data[fieldName] = cleaned;
-          }
-        }
-      });
-    }
-  });
-}
-
 function modelFactory (instance, name, schema, BaseModel = Model) {
   const parentSchema = BaseModel.schema;
   const subSchema = schema;
@@ -160,7 +169,10 @@ function modelFactory (instance, name, schema, BaseModel = Model) {
       this.subSchema = subSchema;
       this.schema = fullSchema;
       const defaults = extractDefaults(this.schema.fields);
-      this.data = Object.assign({}, defaults, this.schema.cast(data));
+
+      // set the data directly on document through getters/setters
+      this.data = {};
+      Object.assign(this, defaults, this.schema.cast(data));
     }
   }
 
