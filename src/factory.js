@@ -68,16 +68,6 @@ function attachCore (Model, instance) {
 
     Item.prototype.Parent = Model;
 
-    Item.prototype.asParent = function () {
-      const parentData = Object.keys(this.Parent.schema.fields)
-        .reduce((data, fieldName) => {
-          data[fieldName] = this[fieldName];
-          return data;
-        }, {});
-
-      return new this.Parent(parentData);
-    };
-
     Item.Parent = Model;
     Item.discriminatorKey = discriminatorKey;
 
