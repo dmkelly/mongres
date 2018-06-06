@@ -12,24 +12,30 @@ describe('Query', () => {
 
     mongres = new Mongres();
 
-    Plot = mongres.model('Plot', new Schema({
-      a: {
-        type: Schema.Types.Integer()
-      },
-      b: {
-        type: Schema.Types.Integer(),
-        ref: 'Value'
-      },
-      c: {
-        type: Schema.Types.Integer()
-      }
-    }));
+    Plot = mongres.model(
+      'Plot',
+      new Schema({
+        a: {
+          type: Schema.Types.Integer()
+        },
+        b: {
+          type: Schema.Types.Integer(),
+          ref: 'Value'
+        },
+        c: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
-    Value = mongres.model('Value', new Schema({
-      a: {
-        type: Schema.Types.Integer()
-      }
-    }));
+    Value = mongres.model(
+      'Value',
+      new Schema({
+        a: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
     await mongres.connect(helpers.connectionInfo);
 
@@ -76,8 +82,7 @@ describe('Query', () => {
     it('Includes populated fields in the result', async () => {
       const record = await Plot.findOne({
         a: 1
-      })
-        .populate('b');
+      }).populate('b');
       expect(record.b).to.be.instanceof(Value);
       expect(record.a).to.equal(1);
       expect(record.b.a).to.equal(3);
@@ -142,7 +147,9 @@ describe('Query', () => {
 
   describe('#skip()', () => {
     it('Supports skipping a given number of results', async () => {
-      const records = await Plot.find().sort('a', 1).skip(1);
+      const records = await Plot.find()
+        .sort('a', 1)
+        .skip(1);
       expect(records.length).to.equal(2);
       expect(records[0].a).to.equal(2);
       expect(records[1].a).to.equal(3);
@@ -159,7 +166,7 @@ describe('Query', () => {
     });
 
     it('Supports function filters', async () => {
-      const records = await Plot.find().where(function () {
+      const records = await Plot.find().where(function() {
         this.where('id', 2);
       });
       expect(records.length).to.equal(1);

@@ -14,11 +14,11 @@ describe('model/discriminator/core', () => {
       }
     });
 
-    shapeSchema.statics.add1 = function (number) {
+    shapeSchema.statics.add1 = function(number) {
       return number + 1;
     };
 
-    shapeSchema.methods.doubleArea = function () {
+    shapeSchema.methods.doubleArea = function() {
       return this.area * 2;
     };
 
@@ -32,11 +32,11 @@ describe('model/discriminator/core', () => {
       }
     });
 
-    rectangleSchema.statics.add2 = function (number) {
+    rectangleSchema.statics.add2 = function(number) {
       return number + 2;
     };
 
-    rectangleSchema.methods.doubleHeight = function () {
+    rectangleSchema.methods.doubleHeight = function() {
       return this.height * 2;
     };
 
@@ -47,11 +47,11 @@ describe('model/discriminator/core', () => {
       }
     });
 
-    circleSchema.statics.add3 = function (number) {
+    circleSchema.statics.add3 = function(number) {
       return number + 3;
     };
 
-    circleSchema.methods.doubleDiameter = function () {
+    circleSchema.methods.doubleDiameter = function() {
       return this.diameter * 2;
     };
 

@@ -2,23 +2,23 @@ const { isNil } = require('../utils');
 const Type = require('./type');
 
 class Boolean extends Type {
-  constructor () {
+  constructor() {
     super();
     this.dataType = 'boolean';
   }
 
-  cast (value) {
+  cast(value) {
     if (isNil(value)) {
       return;
     }
     return !!value;
   }
 
-  defineColumn (table, columnName) {
+  defineColumn(table, columnName) {
     return table.boolean(columnName);
   }
 
-  isValid () {
+  isValid() {
     return true;
   }
 }

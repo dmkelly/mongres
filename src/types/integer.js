@@ -1,12 +1,12 @@
 const Type = require('./type');
 
 class Integer extends Type {
-  constructor () {
+  constructor() {
     super();
     this.dataType = 'integer';
   }
 
-  cast (value) {
+  cast(value) {
     const integer = parseInt(value, 10);
     if (isNaN(integer)) {
       return;
@@ -14,11 +14,11 @@ class Integer extends Type {
     return integer;
   }
 
-  defineColumn (table, columnName) {
+  defineColumn(table, columnName) {
     return table.integer(columnName);
   }
 
-  isValid (value) {
+  isValid(value) {
     return !isNaN(value);
   }
 }

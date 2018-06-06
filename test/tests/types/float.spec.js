@@ -20,9 +20,11 @@ describe('types/Float', () => {
     });
 
     it('Handles objects', () => {
-      expect(field.cast({
-        test: 5
-      })).to.be.undefined;
+      expect(
+        field.cast({
+          test: 5
+        })
+      ).to.be.undefined;
     });
 
     it('Correctly handles falsy values', () => {

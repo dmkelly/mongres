@@ -14,11 +14,15 @@ describe('types/String', () => {
     });
 
     it('Handles objects', () => {
-      expect(field.cast({
-        test: 5
-      })).to.equal(JSON.stringify({
-        test: 5
-      }));
+      expect(
+        field.cast({
+          test: 5
+        })
+      ).to.equal(
+        JSON.stringify({
+          test: 5
+        })
+      );
     });
 
     it('Correctly handles falsy values', () => {
@@ -41,9 +45,11 @@ describe('types/String', () => {
       expect(field.isValid(true)).to.be.ok;
       expect(field.isValid(5)).to.be.ok;
       expect(field.isValid('test')).to.be.ok;
-      expect(field.isValid({
-        test: 5
-      })).to.be.ok;
+      expect(
+        field.isValid({
+          test: 5
+        })
+      ).to.be.ok;
     });
 
     it('Rejects values that are too long', () => {

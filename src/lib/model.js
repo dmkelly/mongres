@@ -1,4 +1,4 @@
-function getBackRefFields (Model, schema) {
+function getBackRefFields(Model, schema) {
   const fields = Object.values(schema.fields);
   const backRefFields = fields.reduce((backRefFields, field) => {
     if (field.refTableName === Model.tableName) {
@@ -9,28 +9,27 @@ function getBackRefFields (Model, schema) {
   return backRefFields;
 }
 
-function serialize (document, schema) {
+function serialize(document, schema) {
   const { instance } = document;
-  const data = Object.keys(schema.fields)
-    .reduce((data, fieldName) => {
-      const field = schema.fields[fieldName];
-      const value = document.data[fieldName];
+  const data = Object.keys(schema.fields).reduce((data, fieldName) => {
+    const field = schema.fields[fieldName];
+    const value = document.data[fieldName];
 
-      if (field.ref) {
-        const Ref = instance.model(field.ref);
-        if (Ref && value instanceof Ref) {
-          data[field.columnName] = value.id;
-          return data;
-        }
-      }
-
-      if (field.isNested) {
+    if (field.ref) {
+      const Ref = instance.model(field.ref);
+      if (Ref && value instanceof Ref) {
+        data[field.columnName] = value.id;
         return data;
       }
+    }
 
-      data[field.columnName] = value;
+    if (field.isNested) {
       return data;
-    }, {});
+    }
+
+    data[field.columnName] = value;
+    return data;
+  }, {});
   return data;
 }
 

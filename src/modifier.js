@@ -1,13 +1,13 @@
 class Modifier {
-  constructor (fieldName) {
+  constructor(fieldName) {
     this.fieldName = fieldName;
   }
 
-  get (callback) {
+  get(callback) {
     this.getter = callback;
   }
 
-  set (callback) {
+  set(callback) {
     this.setter = callback;
   }
 }

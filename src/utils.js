@@ -1,41 +1,41 @@
 const _ = require('lodash');
 const error = require('./error');
 
-function castError (err) {
+function castError(err) {
   if (err.code === '23505') {
     return new error.ConflictError(err);
   }
   return err;
 }
 
-function escapeRegExp (text) {
+function escapeRegExp(text) {
   return text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-function invoke (fns) {
+function invoke(fns) {
   for (let fn of fns) {
     fn();
   }
 }
 
-async function invokeSeries (fns) {
+async function invokeSeries(fns) {
   for (let fn of fns) {
     await fn();
   }
 }
 
-function sanitizeName (name) {
-  return name.trim()
+function sanitizeName(name) {
+  return name
+    .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '_');
 }
 
-function template (text, substitutions) {
-  return Object.entries(substitutions)
-    .reduce((message, [key, value]) => {
-      const matcher = new RegExp(`\\{${escapeRegExp(key)}\\}`, 'g');
-      return message.replace(matcher, `${value}`);
-    }, text);
+function template(text, substitutions) {
+  return Object.entries(substitutions).reduce((message, [key, value]) => {
+    const matcher = new RegExp(`\\{${escapeRegExp(key)}\\}`, 'g');
+    return message.replace(matcher, `${value}`);
+  }, text);
 }
 
 module.exports = {

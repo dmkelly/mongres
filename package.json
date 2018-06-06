@@ -7,10 +7,12 @@
   },
   "main": "src/index.js",
   "scripts": {
+    "format": "prettier --write \"*/**/*.{js,md}\"",
     "lint": "eslint -c .eslintrc src/**/*.js && eslint -c test/.eslintrc test/**/*.js ",
     "nsp": "nsp check",
     "police": "police -l",
     "posttest": "npm run lint",
+    "precommit": "lint-staged",
     "setup": "bash test/setup.bash",
     "test": "NODE_ENV=test mocha --opts ./test/test.opts test/tests"
   },
@@ -25,10 +27,13 @@
     "chai": "4.1.2",
     "chai-as-promised": "7.1.1",
     "eslint": "4.19.1",
+    "husky": "0.14.3",
+    "lint-staged": "7.1.3",
     "mocha": "5.1.0",
     "nsp": "3.2.1",
     "pg": "7.4.1",
     "police": "0.4.0",
+    "prettier": "1.13.4",
     "sinon": "5.0.7"
   },
   "dependencies": {

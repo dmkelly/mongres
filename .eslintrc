@@ -5,10 +5,6 @@
       2,
       {"SwitchCase": 1}
     ],
-    "quotes": [
-      2,
-      "single"
-    ],
     "linebreak-style": [
       2,
       "unix"
@@ -29,7 +25,6 @@
       {"before": false, "after": true}
     ],
     "keyword-spacing": 2,
-    "space-before-function-paren": 2,
     "space-before-blocks": 2,
     "no-undef-init": 2,
     "no-undefined": 2,
@@ -65,7 +60,5 @@
   "globals": {
     "chai": true
   },
-  "settings": {
-
-  }
+  "settings": {}
 }

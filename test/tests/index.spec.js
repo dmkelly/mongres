@@ -28,7 +28,8 @@ describe('Mongres', () => {
     });
 
     it('Creates tables for each model', async () => {
-      const queryString = 'SELECT tablename FROM pg_catalog.pg_tables' +
+      const queryString =
+        'SELECT tablename FROM pg_catalog.pg_tables' +
         ` WHERE schemaname='${mongres.namespace}'`;
 
       await mongres.connect(helpers.connectionInfo);

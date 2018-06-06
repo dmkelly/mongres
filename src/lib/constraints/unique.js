@@ -2,19 +2,21 @@ const Constraint = require('./constraint');
 const { getConstraints } = require('../describe');
 
 class Unique extends Constraint {
-  async exists () {
+  async exists() {
     const { instance, tableName } = this.Model;
     const constraints = await getConstraints(instance, tableName);
-    const constraint = constraints.find((c) => {
-      return c.constraint_type === 'UNIQUE'
-        && c.table_name === tableName
-        && c.constraint_name === `${tableName}_${this.field.columnName}_unique`;
+    const constraint = constraints.find(c => {
+      return (
+        c.constraint_type === 'UNIQUE' &&
+        c.table_name === tableName &&
+        c.constraint_name === `${tableName}_${this.field.columnName}_unique`
+      );
     });
 
     return !!constraint;
   }
 
-  create (table) {
+  create(table) {
     return table.unique([this.field.columnName]);
   }
 }

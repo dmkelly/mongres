@@ -1,8 +1,8 @@
 const Query = require('./query');
 const { castError, isNil } = require('./utils');
 
-function create (Model) {
-  return async function (data, { transaction } = {}) {
+function create(Model) {
+  return async function(data, { transaction } = {}) {
     const document = new Model(data);
     let result;
 
@@ -15,23 +15,22 @@ function create (Model) {
   };
 }
 
-function find (Model) {
-  return function (filters = {}) {
+function find(Model) {
+  return function(filters = {}) {
     return new Query(Model, {}).where(filters);
   };
 }
 
-function findOne (Model) {
-  return function (filters = {}) {
+function findOne(Model) {
+  return function(filters = {}) {
     return new Query(Model, {
       single: true
-    })
-      .where(filters);
+    }).where(filters);
   };
 }
 
-function findById (Model) {
-  return async function (id) {
+function findById(Model) {
+  return async function(id) {
     id = Model.schema.fields.id.cast(id);
     if (isNil(id)) {
       return await null;
@@ -40,8 +39,8 @@ function findById (Model) {
   };
 }
 
-function remove (Model, instance) {
-  return async function (filters, { transaction } = {}) {
+function remove(Model, instance) {
+  return async function(filters, { transaction } = {}) {
     if (!filters) {
       throw await new Error('Model.remove() requires conditions');
     }
@@ -50,15 +49,17 @@ function remove (Model, instance) {
     if (Model.Parent) {
       // Remove corresponding parents and rely on foreign key cascades to remove
       // children
-      return Model.Parent.remove((builder) => {
-        const subquery = client.table(Model.tableName)
+      return Model.Parent.remove(builder => {
+        const subquery = client
+          .table(Model.tableName)
           .where(filters)
           .select(Model.Parent.tableName);
         builder.where('id', 'in', subquery);
       });
     }
 
-    let query = client.table(Model.tableName)
+    let query = client
+      .table(Model.tableName)
       .where(filters)
       .del();
     if (transaction) {
@@ -72,10 +73,11 @@ function remove (Model, instance) {
   };
 }
 
-function update (Model, instance) {
-  return async function (filters, changes, { transaction } = {}) {
+function update(Model, instance) {
+  return async function(filters, changes, { transaction } = {}) {
     const client = instance.client;
-    let query = client.table(Model.tableName)
+    let query = client
+      .table(Model.tableName)
       .update(changes)
       .where(filters);
     if (transaction) {

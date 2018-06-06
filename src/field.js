@@ -3,7 +3,7 @@ const { getRef, validateField } = require('./lib/field');
 const { ValidationError } = require('./error');
 
 class Field {
-  constructor (schema, fieldName, definition) {
+  constructor(schema, fieldName, definition) {
     this.schema = schema; // schema.instance is available once the model is created
     this.fieldName = fieldName;
     this.columnName = sanitizeName(fieldName);
@@ -20,7 +20,9 @@ class Field {
 
     this.hasIndex = !!definition.index;
     this.indexType = this.hasIndex
-      ? (isString(definition.index) ? definition.index : 'btree')
+      ? isString(definition.index)
+        ? definition.index
+        : 'btree'
       : 'btree';
 
     if (definition.validate) {
@@ -40,7 +42,7 @@ class Field {
     }
   }
 
-  cast (value) {
+  cast(value) {
     if (!this.isNested) {
       if (this.ref) {
         const Ref = getRef(this);
@@ -56,7 +58,7 @@ class Field {
     }
 
     const Model = this.type;
-    return value.map((item) => {
+    return value.map(item => {
       if (item instanceof Model) {
         return item;
       }
@@ -64,7 +66,7 @@ class Field {
     });
   }
 
-  getConstraints () {
+  getConstraints() {
     const constraints = {};
     if (this.required) {
       constraints.required = true;
@@ -81,7 +83,7 @@ class Field {
     return constraints;
   }
 
-  validate (value) {
+  validate(value) {
     if (!this.isNested) {
       const Ref = getRef(this);
       if (Ref && value instanceof Ref) {
@@ -90,11 +92,16 @@ class Field {
       return validateField(this, value);
     }
     if (value && !Array.isArray(value)) {
-      throw new ValidationError(`Nested field ${this.fieldName} should be a list of ${this.type.modelName}`, {
-        field: this.fieldName
-      });
+      throw new ValidationError(
+        `Nested field ${this.fieldName} should be a list of ${
+          this.type.modelName
+        }`,
+        {
+          field: this.fieldName
+        }
+      );
     }
-    value.forEach((item) => item.validate());
+    value.forEach(item => item.validate());
   }
 }
 

@@ -2,12 +2,12 @@ const { isDate, isNil, isNumber, isString } = require('../utils');
 const Type = require('./type');
 
 class DateType extends Type {
-  constructor () {
+  constructor() {
     super();
     this.dataType = 'date';
   }
 
-  cast (value) {
+  cast(value) {
     if (isNil(value)) {
       return;
     }
@@ -35,11 +35,11 @@ class DateType extends Type {
     return value;
   }
 
-  defineColumn (table, columnName) {
+  defineColumn(table, columnName) {
     return table.timestamp(columnName);
   }
 
-  isValid (value) {
+  isValid(value) {
     if (isNil(value)) {
       return true;
     }

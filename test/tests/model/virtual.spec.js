@@ -20,10 +20,9 @@ describe('model/virtual', () => {
     let Model;
 
     beforeEach(() => {
-      schema.virtual('testVirtual')
-        .get(function () {
-          return this.testField + 1;
-        });
+      schema.virtual('testVirtual').get(function() {
+        return this.testField + 1;
+      });
       Model = mongres.model('Test', schema);
     });
 
@@ -39,10 +38,9 @@ describe('model/virtual', () => {
     let Model;
 
     beforeEach(() => {
-      schema.virtual('testVirtual')
-        .set(function (value) {
-          this.testField = value + 5;
-        });
+      schema.virtual('testVirtual').set(function(value) {
+        this.testField = value + 5;
+      });
       Model = mongres.model('Test', schema);
     });
 
@@ -59,11 +57,12 @@ describe('model/virtual', () => {
     let Model;
 
     beforeEach(() => {
-      schema.virtual('testVirtual')
-        .get(function () {
+      schema
+        .virtual('testVirtual')
+        .get(function() {
           return this.testField + 1;
         })
-        .set(function (value) {
+        .set(function(value) {
           this.testField = value + 5;
         });
       Model = mongres.model('Test', schema);

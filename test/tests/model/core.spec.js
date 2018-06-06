@@ -11,11 +11,14 @@ describe('model/core', () => {
     let Widget;
 
     beforeEach(() => {
-      Widget = mongres.model('Widget', new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      }));
+      Widget = mongres.model(
+        'Widget',
+        new Schema({
+          height: {
+            type: Schema.Types.Integer()
+          }
+        })
+      );
     });
 
     it('Creates new model', () => {
@@ -40,11 +43,14 @@ describe('model/core', () => {
     let Widget;
 
     beforeEach(() => {
-      Widget = mongres.model('Widget', new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      }));
+      Widget = mongres.model(
+        'Widget',
+        new Schema({
+          height: {
+            type: Schema.Types.Integer()
+          }
+        })
+      );
     });
 
     it('Provides top-level properties to access the data', () => {
@@ -70,11 +76,14 @@ describe('model/core', () => {
     let Widget;
 
     beforeEach(() => {
-      Widget = mongres.model('Widget', new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        }
-      }));
+      Widget = mongres.model(
+        'Widget',
+        new Schema({
+          height: {
+            type: Schema.Types.Integer()
+          }
+        })
+      );
     });
 
     it('Provides top-level properties to modify the data', () => {
@@ -116,7 +125,7 @@ describe('model/core', () => {
           type: Schema.Types.Integer()
         }
       });
-      schema.methods.testMethod = function (amount) {
+      schema.methods.testMethod = function(amount) {
         return this.height + amount;
       };
 
@@ -140,7 +149,7 @@ describe('model/core', () => {
           type: Schema.Types.Integer()
         }
       });
-      schema.statics.testStatic = function (amount) {
+      schema.statics.testStatic = function(amount) {
         return this.tableName + amount;
       };
 

@@ -1,7 +1,7 @@
 const hooks = ['remove', 'save', 'validate'];
 
 class Middleware {
-  constructor (hook, callback) {
+  constructor(hook, callback) {
     if (!hooks.includes(hook)) {
       throw new Error(`Invalid middleware hook "${hook}"`);
     }
@@ -9,11 +9,11 @@ class Middleware {
     this.callback = callback;
   }
 
-  shouldExecuteOnHook (hook) {
+  shouldExecuteOnHook(hook) {
     return this.hook === hook;
   }
 
-  async execute (hook, context) {
+  async execute(hook, context) {
     if (this.shouldExecuteOnHook(hook)) {
       await this.callback.call(context);
     }

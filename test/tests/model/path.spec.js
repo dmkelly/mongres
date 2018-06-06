@@ -20,10 +20,9 @@ describe('model/path', () => {
     let Model;
 
     beforeEach(async () => {
-      schema.path('testValue')
-        .get(function (value) {
-          return value + 1;
-        });
+      schema.path('testValue').get(function(value) {
+        return value + 1;
+      });
       Model = mongres.model('Test', schema);
       await mongres.connect(helpers.connectionInfo);
     });
@@ -53,10 +52,9 @@ describe('model/path', () => {
     let Model;
 
     beforeEach(async () => {
-      schema.path('testValue')
-        .set(function (value) {
-          return value + 1;
-        });
+      schema.path('testValue').set(function(value) {
+        return value + 1;
+      });
       Model = mongres.model('Test', schema);
       await mongres.connect(helpers.connectionInfo);
     });

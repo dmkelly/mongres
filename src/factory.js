@@ -4,35 +4,30 @@ const statics = require('./statics');
 const Types = require('./types');
 const { cloneDeep, isUndefined, isNil, sanitizeName } = require('./utils');
 
-function extractDefaults (fields) {
-  return Object.entries(fields)
-    .reduce((defaults, [fieldName, field]) => {
-      const value = field.defaultValue;
-      if (!isNil(value)) {
-        defaults[fieldName] = field.cast(value);
-      }
-      return defaults;
-    }, {});
+function extractDefaults(fields) {
+  return Object.entries(fields).reduce((defaults, [fieldName, field]) => {
+    const value = field.defaultValue;
+    if (!isNil(value)) {
+      defaults[fieldName] = field.cast(value);
+    }
+    return defaults;
+  }, {});
 }
 
-function attachCore (Model, instance) {
+function attachCore(Model, instance) {
   Model.instance = instance;
 
-  Object.keys(statics).forEach((key) => {
+  Object.keys(statics).forEach(key => {
     Model[key] = statics[key](Model, instance);
   });
 
-  Model.discriminator = function (modelName, schema) {
+  Model.discriminator = function(modelName, schema) {
     const { discriminatorKey = 'type' } = schema.options;
 
     if (!schema.fields[Model.tableName]) {
-      schema.fields[Model.tableName] = new Field(
-        schema,
-        Model.tableName,
-        {
-          type: Types.Integer()
-        }
-      );
+      schema.fields[Model.tableName] = new Field(schema, Model.tableName, {
+        type: Types.Integer()
+      });
     }
     if (!schema.fields[discriminatorKey]) {
       schema.fields[discriminatorKey] = new Field(
@@ -79,29 +74,28 @@ function attachCore (Model, instance) {
   };
 }
 
-function attachMethods (Model, schema) {
-  Object.entries(schema.methods)
-    .forEach(([name, fn]) => {
-      Model.prototype[name] = fn;
-    });
+function attachMethods(Model, schema) {
+  Object.entries(schema.methods).forEach(([name, fn]) => {
+    Model.prototype[name] = fn;
+  });
 }
 
-function attachProperties (Model, instance, schema) {
+function attachProperties(Model, instance, schema) {
   const properties = Object.keys(schema.fields);
-  properties.forEach((fieldName) => {
+  properties.forEach(fieldName => {
     if (!Model.prototype.hasOwnProperty(fieldName)) {
       const modifier = schema.modifiers.get(fieldName);
 
       Object.defineProperty(Model.prototype, fieldName, {
         enumerable: true,
-        get: function () {
+        get: function() {
           const value = this.data[fieldName];
           if (modifier && modifier.getter) {
             return modifier.getter.call(this, value);
           }
           return value;
         },
-        set: function (value) {
+        set: function(value) {
           const field = schema.fields[fieldName];
           if (field.ref) {
             const Ref = instance.model(field.ref);
@@ -114,7 +108,8 @@ function attachProperties (Model, instance, schema) {
           const cleaned = field.cast(value);
           if (!isUndefined(cleaned)) {
             if (modifier && modifier.setter) {
-              return this.data[fieldName] = modifier.setter.call(this, cleaned);
+              this.data[fieldName] = modifier.setter.call(this, cleaned);
+              return;
             }
             this.data[fieldName] = cleaned;
           }
@@ -124,23 +119,22 @@ function attachProperties (Model, instance, schema) {
   });
 }
 
-function attachStatics (Model, schema) {
-  Object.entries(schema.statics)
-    .forEach(([name, fn]) => {
-      Model[name] = fn;
-    });
+function attachStatics(Model, schema) {
+  Object.entries(schema.statics).forEach(([name, fn]) => {
+    Model[name] = fn;
+  });
 }
 
-function attachVirtuals (Model, schema) {
+function attachVirtuals(Model, schema) {
   for (let virtual of schema.virtuals.values()) {
     Object.defineProperty(Model.prototype, virtual.name, {
       enumerable: true,
-      get: function () {
+      get: function() {
         if (virtual.getter) {
           return virtual.getter.call(this);
         }
       },
-      set: function (value) {
+      set: function(value) {
         if (virtual.setter) {
           return virtual.setter.call(this, value);
         }
@@ -149,7 +143,7 @@ function attachVirtuals (Model, schema) {
   }
 }
 
-function modelFactory (instance, name, schema, BaseModel = Model) {
+function modelFactory(instance, name, schema, BaseModel = Model) {
   const parentSchema = BaseModel.schema;
   const subSchema = schema;
   const fullSchema = parentSchema.extend(schema);
@@ -158,7 +152,7 @@ function modelFactory (instance, name, schema, BaseModel = Model) {
   fullSchema.instance = instance;
 
   class Item extends BaseModel {
-    constructor (...args) {
+    constructor(...args) {
       super(...args);
 
       const [data] = args;
@@ -176,7 +170,7 @@ function modelFactory (instance, name, schema, BaseModel = Model) {
     }
   }
 
-  Object.defineProperty (Item, 'name', {
+  Object.defineProperty(Item, 'name', {
     value: name
   });
 

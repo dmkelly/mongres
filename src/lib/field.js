@@ -1,14 +1,14 @@
 const { ValidationError } = require('../error');
 const { isFunction, isNil, template } = require('../utils');
 
-function getRef (field) {
+function getRef(field) {
   if (!field.ref) {
     return null;
   }
   return field.schema.instance.model(field.ref);
 }
 
-function validateField (field, value) {
+function validateField(field, value) {
   if (isNil(value)) {
     if (field.required) {
       throw new ValidationError(`Field ${field.fieldName} is required`, {
@@ -18,17 +18,24 @@ function validateField (field, value) {
     return;
   }
   if (!field.type.isValid(value)) {
-    throw new ValidationError(`Invalid value of field ${field.fieldName}: ${value}`, {
-      field: field.fieldName,
-      value
-    });
+    throw new ValidationError(
+      `Invalid value of field ${field.fieldName}: ${value}`,
+      {
+        field: field.fieldName,
+        value
+      }
+    );
   }
   if (field.validator && isFunction(field.validator)) {
     if (!field.validator(value)) {
-      const defaultMessage = `Validation failed on ${field.fieldName}: ${value}`;
-      const messageText = field.validationTemplate && template(field.validationTemplate, {
-        VALUE: value
-      });
+      const defaultMessage = `Validation failed on ${
+        field.fieldName
+      }: ${value}`;
+      const messageText =
+        field.validationTemplate &&
+        template(field.validationTemplate, {
+          VALUE: value
+        });
       throw new ValidationError(messageText || defaultMessage, {
         field: field.fieldName,
         value

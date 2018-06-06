@@ -5,40 +5,41 @@ const Field = require('../field');
 const Types = require('../types');
 const { sanitizeName } = require('../utils');
 
-function defineField (table, fieldName, field) {
+function defineField(table, fieldName, field) {
   if (!field.isNested) {
     const columnName = sanitizeName(fieldName);
     field.type.defineColumn(table, columnName);
   }
 }
 
-function defineTable (table, schema) {
-  Object.entries(schema.fields)
-    .forEach(([fieldName, field]) => {
-      defineField(table, fieldName, field);
-    });
+function defineTable(table, schema) {
+  Object.entries(schema.fields).forEach(([fieldName, field]) => {
+    defineField(table, fieldName, field);
+  });
 }
 
-async function createTable (instance, Model) {
+async function createTable(instance, Model) {
   const dbSchema = instance.namespace
     ? instance.client.schema.withSchema(instance.namespace)
     : instance.client.schema;
   const tableExists = await dbSchema.hasTable(Model.tableName);
 
   if (!tableExists) {
-    await dbSchema.createTable(Model.tableName, function (table) {
+    await dbSchema.createTable(Model.tableName, function(table) {
       defineTable(table, Model.subSchema);
     });
   }
 }
 
-async function updateForeignKeys (instance) {
-  const foreignKeys = await instance.client('pg_constraint')
+async function updateForeignKeys(instance) {
+  const foreignKeys = await instance
+    .client('pg_constraint')
     .select('*')
     .where('contype', '=', 'f');
 
-  const queries = foreignKeys.map(async (foreignKey) => {
-    const [keyData] = await instance.client('pg_class')
+  const queries = foreignKeys.map(async foreignKey => {
+    const [keyData] = await instance
+      .client('pg_class')
       .select('relname')
       .where('oid', '=', foreignKey.conrelid);
 
@@ -53,7 +54,7 @@ async function updateForeignKeys (instance) {
   await Promise.all(queries);
 }
 
-async function getConstraints (Model) {
+async function getConstraints(Model) {
   const constraints = [];
   const fields = Object.values(Model.subSchema.fields);
 
@@ -78,13 +79,12 @@ async function getConstraints (Model) {
   }
 
   if (Model.Parent) {
-    const constraint = new SubClassConstraint(Model, new Field(
-      Model.subSchema,
-      Model.Parent.tableName,
-      {
+    const constraint = new SubClassConstraint(
+      Model,
+      new Field(Model.subSchema, Model.Parent.tableName, {
         type: Types.Integer()
-      }
-    ));
+      })
+    );
     const constraintExists = await constraint.exists();
     if (!constraintExists) {
       constraints.push(constraint);
@@ -105,13 +105,13 @@ async function getConstraints (Model) {
   return constraints;
 }
 
-async function createTableConstraints (instance, Model) {
+async function createTableConstraints(instance, Model) {
   const constraints = await getConstraints(Model);
   if (!constraints.length) {
     return;
   }
 
-  await instance.dbSchema.alterTable(Model.tableName, (table) => {
+  await instance.dbSchema.alterTable(Model.tableName, table => {
     for (let constraint of constraints) {
       constraint.create(table);
     }
@@ -120,7 +120,7 @@ async function createTableConstraints (instance, Model) {
   await updateForeignKeys(instance);
 }
 
-async function createTables (instance) {
+async function createTables(instance) {
   for (let Model of instance.models.values()) {
     await createTable(instance, Model);
   }

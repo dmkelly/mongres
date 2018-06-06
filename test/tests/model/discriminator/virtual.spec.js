@@ -14,7 +14,7 @@ describe('model/discriminator/virtual', () => {
       }
     });
 
-    shapeSchema.virtual('doubleArea').get(function () {
+    shapeSchema.virtual('doubleArea').get(function() {
       return this.area * 2;
     });
 
@@ -28,7 +28,7 @@ describe('model/discriminator/virtual', () => {
       }
     });
 
-    rectangleSchema.virtual('doubleHeight').get(function () {
+    rectangleSchema.virtual('doubleHeight').get(function() {
       return this.height * 2;
     });
 
@@ -39,7 +39,7 @@ describe('model/discriminator/virtual', () => {
       }
     });
 
-    circleSchema.virtual('doubleDiameter').get(function () {
+    circleSchema.virtual('doubleDiameter').get(function() {
       return this.diameter * 2;
     });
 

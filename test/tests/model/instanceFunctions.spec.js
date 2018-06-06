@@ -39,7 +39,7 @@ describe('model/instanceFunctions', () => {
       width: {
         validate: {
           message: 'invalid width: {VALUE}',
-          validator: (value) => value > 0
+          validator: value => value > 0
         },
         required: true,
         type: Schema.Types.Integer()
@@ -164,7 +164,9 @@ describe('model/instanceFunctions', () => {
     it('Handles populated fields when it validates', async () => {
       await line.populate('start');
       line.end = 6;
-      await expect(line.validate()).not.to.be.rejectedWith(error.ValidationError);
+      await expect(line.validate()).not.to.be.rejectedWith(
+        error.ValidationError
+      );
     });
 
     it('Handles when the populated document does not exist', async () => {
@@ -185,10 +187,7 @@ describe('model/instanceFunctions', () => {
       widgetB = new Widget({
         height: 7
       });
-      await Promise.all([
-        widgetA.save(),
-        widgetB.save()
-      ]);
+      await Promise.all([widgetA.save(), widgetB.save()]);
     });
 
     it('Deletes the document', async () => {
@@ -372,11 +371,12 @@ describe('model/instanceFunctions', () => {
         width: -1
       });
 
-      return square.validate()
+      return square
+        .validate()
         .then(() => {
           return Promise.reject(new Error('Validation should have rejected'));
         })
-        .catch((err) => {
+        .catch(err => {
           expect(err).to.be.instanceof(error.ValidationError);
           expect(err.details[0].message).to.equal('invalid width: -1');
         });

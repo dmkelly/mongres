@@ -5,7 +5,7 @@ const Schema = require('./schema');
 const { createTables } = require('./lib/tables');
 const { modelFactory } = require('./factory');
 
-function createModel (instance, name, schema) {
+function createModel(instance, name, schema) {
   if (instance.models.get(name)) {
     throw new Error(`Model "${name}" already exists`);
   }
@@ -14,29 +14,29 @@ function createModel (instance, name, schema) {
 }
 
 class Mongres {
-  constructor () {
+  constructor() {
     this.client = null;
     this.Schema = Schema;
     this.models = new Map();
     this.namespace = 'public';
   }
 
-  get dbSchema () {
+  get dbSchema() {
     return this.namespace
       ? this.client.schema.withSchema(this.namespace)
       : this.client.schema;
   }
 
-  connect (connectionInfo) {
+  connect(connectionInfo) {
     this.client = knex(connectionInfo);
     return createTables(this);
   }
 
-  disconnect () {
+  disconnect() {
     return this.client.destroy();
   }
 
-  model (name, schema) {
+  model(name, schema) {
     if (schema) {
       return createModel(this, name, schema);
     }

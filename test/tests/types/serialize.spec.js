@@ -10,23 +10,26 @@ describe('types', () => {
 
     mongres = new Mongres();
 
-    Model = mongres.model('Data', new Schema({
-      boolean: {
-        type: Schema.Types.Boolean()
-      },
-      date: {
-        type: Schema.Types.Date()
-      },
-      float: {
-        type: Schema.Types.Float()
-      },
-      integer: {
-        type: Schema.Types.Integer()
-      },
-      string: {
-        type: Schema.Types.String()
-      }
-    }));
+    Model = mongres.model(
+      'Data',
+      new Schema({
+        boolean: {
+          type: Schema.Types.Boolean()
+        },
+        date: {
+          type: Schema.Types.Date()
+        },
+        float: {
+          type: Schema.Types.Float()
+        },
+        integer: {
+          type: Schema.Types.Integer()
+        },
+        string: {
+          type: Schema.Types.String()
+        }
+      })
+    );
 
     await mongres.connect(helpers.connectionInfo);
   });

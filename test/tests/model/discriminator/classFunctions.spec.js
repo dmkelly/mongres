@@ -12,28 +12,37 @@ describe('model/discriminator/classFunctions', () => {
 
     mongres = new Mongres();
 
-    Shape = mongres.model('Shape', new Schema({
-      area: {
-        type: Schema.Types.Integer()
-      }
-    }));
+    Shape = mongres.model(
+      'Shape',
+      new Schema({
+        area: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
-    Rectangle = Shape.discriminator('Rectangle', new Schema({
-      height: {
-        type: Schema.Types.Integer()
-      },
-      width: {
-        required: true,
-        type: Schema.Types.Integer()
-      }
-    }));
+    Rectangle = Shape.discriminator(
+      'Rectangle',
+      new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        },
+        width: {
+          required: true,
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
-    Circle = Shape.discriminator('Circle', new Schema({
-      diameter: {
-        required: true,
-        type: Schema.Types.Integer()
-      }
-    }));
+    Circle = Shape.discriminator(
+      'Circle',
+      new Schema({
+        diameter: {
+          required: true,
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
     await mongres.connect(helpers.connectionInfo);
   });
@@ -87,10 +96,12 @@ describe('model/discriminator/classFunctions', () => {
     });
 
     it('Validates before saving', async () => {
-      expect(Rectangle.create({
-        height: 5,
-        area: 5
-      })).to.be.rejectedWith(error.ValidationError);
+      expect(
+        Rectangle.create({
+          height: 5,
+          area: 5
+        })
+      ).to.be.rejectedWith(error.ValidationError);
 
       const records = await helpers.query.find(Rectangle.tableName);
       expect(records.length).to.equal(0);
@@ -108,12 +119,14 @@ describe('model/discriminator/classFunctions', () => {
       });
 
       it('Throws a ConflictError', () => {
-        expect(Rectangle.create({
-          id: existing.id,
-          height: 2,
-          width: 4,
-          area: 8
-        })).to.be.rejectedWith(error.ConflictError);
+        expect(
+          Rectangle.create({
+            id: existing.id,
+            height: 2,
+            width: 4,
+            area: 8
+          })
+        ).to.be.rejectedWith(error.ConflictError);
       });
     });
   });

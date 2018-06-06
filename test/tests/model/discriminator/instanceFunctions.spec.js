@@ -18,14 +18,17 @@ describe('model/discriminator/instanceFunctions', () => {
 
     mongres = new Mongres();
 
-    Point = mongres.model('Point', new Schema({
-      x: {
-        type: Schema.Types.Integer()
-      },
-      y: {
-        type: Schema.Types.Integer()
-      }
-    }));
+    Point = mongres.model(
+      'Point',
+      new Schema({
+        x: {
+          type: Schema.Types.Integer()
+        },
+        y: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
     const shapeSchema = new Schema({
       area: {
@@ -149,5 +152,4 @@ describe('model/discriminator/instanceFunctions', () => {
       expect(postRemoveMiddleware.called).to.be.ok;
     });
   });
-
 });

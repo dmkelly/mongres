@@ -1,23 +1,22 @@
 class Type {
-  constructor () {
+  constructor() {
     this.dataType = null;
   }
 
-  cast (value) {
+  cast(value) {
     return `${value}`;
   }
 
-  isEqual (value1, value2) {
+  isEqual(value1, value2) {
     return value1 === value2;
   }
 
-  defineColumn (table, columnName) {
+  defineColumn(table, columnName) {
     // http://knexjs.org/#Schema-Building
     return table.string(columnName);
   }
 
-  isValid (/* value */) {
-  }
+  isValid(/* value */) {}
 }
 
 module.exports = Type;

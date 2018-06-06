@@ -24,8 +24,10 @@ describe('constraints', () => {
     await mongres.connect(helpers.connectionInfo);
 
     const indexes = await helpers.table.getIndexes(Model.tableName);
-    const constraints = await helpers.table.describeConstraints(Model.tableName);
-    const index = indexes.find((row) => row.column_name === 'id');
+    const constraints = await helpers.table.describeConstraints(
+      Model.tableName
+    );
+    const index = indexes.find(row => row.column_name === 'id');
     const constraint = constraints.find(row => {
       return row.constraint_name === index.index_name;
     });
@@ -54,7 +56,7 @@ describe('constraints', () => {
     await mongres.connect(helpers.connectionInfo);
     const rows = await helpers.table.describeConstraints(Model.tableName);
 
-    const foreignKey = rows.find((row) => row.constraint_type === 'FOREIGN KEY');
+    const foreignKey = rows.find(row => row.constraint_type === 'FOREIGN KEY');
     expect(foreignKey).to.be.ok;
     expect(foreignKey.constraint_name).to.equal('test_testfield_foreign');
   });
@@ -70,7 +72,7 @@ describe('constraints', () => {
     await mongres.connect(helpers.connectionInfo);
     const rows = await helpers.table.describeConstraints(Model.tableName);
 
-    const constraint = rows.find((row) => row.constraint_type === 'UNIQUE');
+    const constraint = rows.find(row => row.constraint_type === 'UNIQUE');
     expect(constraint).to.be.ok;
     expect(constraint.constraint_name).to.equal('test_testfield_unique');
   });
@@ -85,7 +87,7 @@ describe('constraints', () => {
     const Model = mongres.model('Test', schema);
     await mongres.connect(helpers.connectionInfo);
     const rows = await helpers.table.getIndexes(Model.tableName);
-    const index = rows.find((row) => row.column_name === 'testfield');
+    const index = rows.find(row => row.column_name === 'testfield');
     expect(index).to.be.ok;
     expect(index.index_type).to.equal('btree');
   });
@@ -100,7 +102,7 @@ describe('constraints', () => {
     const Model = mongres.model('Test', schema);
     await mongres.connect(helpers.connectionInfo);
     const rows = await helpers.table.getIndexes(Model.tableName);
-    const index = rows.find((row) => row.column_name === 'testfield');
+    const index = rows.find(row => row.column_name === 'testfield');
     expect(index).to.be.ok;
     expect(index.index_type).to.equal('hash');
   });

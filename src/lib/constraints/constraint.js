@@ -1,14 +1,14 @@
 class Constraint {
-  constructor (Model, field) {
+  constructor(Model, field) {
     this.Model = Model;
     this.field = field;
   }
 
-  async exists () {
+  async exists() {
     return await false;
   }
 
-  create (table) {
+  create(table) {
     return table;
   }
 }

@@ -11,25 +11,34 @@ describe('model/classFunctions', () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
-    Square = mongres.model('Square', new Schema({
-      height: {
-        type: Schema.Types.Integer()
-      },
-      width: {
-        required: true,
-        type: Schema.Types.Integer()
-      }
-    }));
-    Widget = mongres.model('Widget', new Schema({
-      height: {
-        type: Schema.Types.Integer()
-      }
-    }));
-    Gadget = Widget.discriminator('Gadget', new Schema({
-      weight: {
-        type: Schema.Types.Integer()
-      }
-    }));
+    Square = mongres.model(
+      'Square',
+      new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        },
+        width: {
+          required: true,
+          type: Schema.Types.Integer()
+        }
+      })
+    );
+    Widget = mongres.model(
+      'Widget',
+      new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
+    Gadget = Widget.discriminator(
+      'Gadget',
+      new Schema({
+        weight: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
 
     await mongres.connect(helpers.connectionInfo);
   });
@@ -56,9 +65,11 @@ describe('model/classFunctions', () => {
     });
 
     it('Validates before saving', async () => {
-      expect(Square.create({
-        height: 5
-      })).to.be.rejectedWith(error.ValidationError);
+      expect(
+        Square.create({
+          height: 5
+        })
+      ).to.be.rejectedWith(error.ValidationError);
 
       const records = await helpers.query.find(Square.tableName);
       expect(records.length).to.equal(0);
@@ -74,10 +85,12 @@ describe('model/classFunctions', () => {
       });
 
       it('Throws a ConflictError', () => {
-        expect(Widget.create({
-          id: existing.id,
-          height: 2
-        })).to.be.rejectedWith(error.ConflictError);
+        expect(
+          Widget.create({
+            id: existing.id,
+            height: 2
+          })
+        ).to.be.rejectedWith(error.ConflictError);
       });
     });
   });

@@ -24,9 +24,11 @@ describe('types/Boolean', () => {
     });
 
     it('Handles objects', () => {
-      expect(field.cast({
-        test: 5
-      })).to.equal(true);
+      expect(
+        field.cast({
+          test: 5
+        })
+      ).to.equal(true);
     });
 
     it('Correctly handles falsy values', () => {

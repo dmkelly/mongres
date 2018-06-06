@@ -7,17 +7,19 @@ const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
 
 class Schema {
-  constructor (fields, options = {}) {
+  constructor(fields, options = {}) {
     if (!fields.id) {
       fields.id = {
         type: Types.Id()
       };
     }
-    this.fields = Object.entries(fields)
-      .reduce((lookup, [fieldName, definition]) => {
+    this.fields = Object.entries(fields).reduce(
+      (lookup, [fieldName, definition]) => {
         lookup[fieldName] = new Field(this, fieldName, definition);
         return lookup;
-      }, {});
+      },
+      {}
+    );
     this.options = options;
     this.methods = {};
     this.statics = {};
@@ -29,39 +31,42 @@ class Schema {
     this.virtuals = new Map();
   }
 
-  cast (data) {
+  cast(data) {
     if (!data) {
       return {};
     }
 
-    return Object.keys(this.fields)
-      .reduce((cleaned, fieldName) => {
-        const field = this.fields[fieldName];
-        let value = data[fieldName];
-        if (isNil(value)) {
-          return cleaned;
-        }
-        value = field.cast(value);
-        if (!isUndefined(value)) {
-          cleaned[fieldName] = value;
-        }
+    return Object.keys(this.fields).reduce((cleaned, fieldName) => {
+      const field = this.fields[fieldName];
+      let value = data[fieldName];
+      if (isNil(value)) {
         return cleaned;
-      }, {});
+      }
+      value = field.cast(value);
+      if (!isUndefined(value)) {
+        cleaned[fieldName] = value;
+      }
+      return cleaned;
+    }, {});
   }
 
-  extend (...schemas) {
-    const existingDefinitions = Object.keys(this.fields)
-      .reduce((definitions, key) => {
+  extend(...schemas) {
+    const existingDefinitions = Object.keys(this.fields).reduce(
+      (definitions, key) => {
         const field = this.fields[key];
         definitions[key] = field.definition;
         return definitions;
-      }, {});
+      },
+      {}
+    );
 
-    const schema = new Schema(Object.assign(
-      {},
-      existingDefinitions,
-      ...schemas.map(schema => schema.toFields())
-    ));
+    const schema = new Schema(
+      Object.assign(
+        {},
+        existingDefinitions,
+        ...schemas.map(schema => schema.toFields())
+      )
+    );
 
     schema.middleware = [this, ...schemas].reduce((middleware, schema) => {
       middleware.pre = middleware.pre.concat(schema.middleware.pre.slice());
@@ -75,53 +80,54 @@ class Schema {
     return schema;
   }
 
-  path (fieldName) {
+  path(fieldName) {
     const modifier = new Modifier(fieldName);
     this.modifiers.set(fieldName, modifier);
     return modifier;
   }
 
-  pre (hook, callback) {
+  pre(hook, callback) {
     this.middleware.pre.push(new Middleware(hook, callback));
     return this;
   }
 
-  post (hook, callback) {
+  post(hook, callback) {
     this.middleware.post.push(new Middleware(hook, callback));
     return this;
   }
 
-  toFields () {
-    return Object.entries(this.fields)
-      .reduce((definition, [fieldName, field]) => {
+  toFields() {
+    return Object.entries(this.fields).reduce(
+      (definition, [fieldName, field]) => {
         definition[fieldName] = field.definition;
         return definition;
-      }, {});
+      },
+      {}
+    );
   }
 
-  validate (data) {
-    const errors = Object.keys(this.fields)
-      .reduce((errors, fieldName) => {
-        const field = this.fields[fieldName];
-        const value = data[fieldName];
-        try {
-          field.validate(value);
-        } catch (err) {
-          if (err instanceof ValidationError) {
-            errors.push(err);
-            return errors;
-          }
-          throw err;
+  validate(data) {
+    const errors = Object.keys(this.fields).reduce((errors, fieldName) => {
+      const field = this.fields[fieldName];
+      const value = data[fieldName];
+      try {
+        field.validate(value);
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          errors.push(err);
+          return errors;
         }
-        return errors;
-      }, []);
+        throw err;
+      }
+      return errors;
+    }, []);
 
     if (errors.length) {
       throw new ValidationError('Validation Error', errors);
     }
   }
 
-  virtual (name) {
+  virtual(name) {
     if (isNil(name)) {
       throw new Error('Schema virtuals require a name');
     }

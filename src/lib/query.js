@@ -8,7 +8,7 @@ const {
 } = require('../utils');
 const filterMap = require('./filters');
 
-function ensureColumnNamespace (field, Model) {
+function ensureColumnNamespace(field, Model) {
   let Parent = Model.Parent;
 
   if (!Parent) {
@@ -26,9 +26,9 @@ function ensureColumnNamespace (field, Model) {
   return null;
 }
 
-function getFieldsList (Model) {
+function getFieldsList(Model) {
   const baseFields = Object.values(Model.schema.fields)
-    .map((field) => {
+    .map(field => {
       if (field.isNested) {
         return null;
       }
@@ -42,7 +42,7 @@ function getFieldsList (Model) {
 
   const allFields = Model.children.reduce((fieldsList, Child) => {
     const childFields = Object.values(Child.subSchema.fields)
-      .map((field) => {
+      .map(field => {
         if (field.isNested) {
           return null;
         }
@@ -55,7 +55,7 @@ function getFieldsList (Model) {
   return allFields;
 }
 
-function getTableModel (query, tableName, discriminator) {
+function getTableModel(query, tableName, discriminator) {
   if (query.Model.children.length) {
     for (let Child of query.Model.children) {
       if (Child.tableName === tableName) {
@@ -84,7 +84,7 @@ function getTableModel (query, tableName, discriminator) {
   return null; // should never hit this
 }
 
-function getWhereBuilder (query, fieldName, filter) {
+function getWhereBuilder(query, fieldName, filter) {
   if (isNil(filter)) {
     return;
   }
@@ -93,21 +93,20 @@ function getWhereBuilder (query, fieldName, filter) {
     const [tableName, columnName] = fieldName.split('.');
     const Model = getTableModel(query, tableName);
     const field = Model.schema.fields[columnName];
-    return (builder) => builder.where(fieldName, field.cast(filter));
+    return builder => builder.where(fieldName, field.cast(filter));
   }
 
-  return (builder) => {
-    Object.entries(filter)
-      .forEach((([key, value]) => {
-        const filterFn = filterMap[key];
-        if (filterFn) {
-          filterFn(builder, fieldName, value);
-        }
-      }));
+  return builder => {
+    Object.entries(filter).forEach(([key, value]) => {
+      const filterFn = filterMap[key];
+      if (filterFn) {
+        filterFn(builder, fieldName, value);
+      }
+    });
   };
 }
 
-function normalizeSortArgs (...args) {
+function normalizeSortArgs(...args) {
   if (args.length === 1) {
     const param = args[0];
     if (param.startsWith('-')) {
@@ -121,7 +120,7 @@ function normalizeSortArgs (...args) {
   return [];
 }
 
-function parseSortDirection (direction) {
+function parseSortDirection(direction) {
   if (isNumber(direction)) {
     if (Number(direction) < 0) {
       return 'desc';
@@ -137,7 +136,7 @@ function parseSortDirection (direction) {
   return 'asc';
 }
 
-function toColumns (fieldsList) {
+function toColumns(fieldsList) {
   return fieldsList.map(field => {
     const obj = {};
     obj[field] = field;
@@ -145,7 +144,7 @@ function toColumns (fieldsList) {
   });
 }
 
-function getFieldByColumnName (columnName, schema) {
+function getFieldByColumnName(columnName, schema) {
   const fields = schema.fields;
   if (fields[columnName]) {
     return fields[columnName];
@@ -158,26 +157,27 @@ function getFieldByColumnName (columnName, schema) {
   return null;
 }
 
-function recordToData (record, schema) {
-  return Object.entries(record)
-    .reduce((data, [columnName, value]) => {
-      const field = getFieldByColumnName(columnName, schema);
-      if (!field) {
-        return data;
-      }
-      data[field.fieldName] = value;
+function recordToData(record, schema) {
+  return Object.entries(record).reduce((data, [columnName, value]) => {
+    const field = getFieldByColumnName(columnName, schema);
+    if (!field) {
       return data;
-    }, {});
+    }
+    data[field.fieldName] = value;
+    return data;
+  }, {});
 }
 
-function toModel (record, query) {
-  const discriminatorKey = query.Model.discriminatorKey &&
-    sanitizeName(query.Model.discriminatorKey);
-  const lookups = Object.entries(record)
-    .reduce((lookup, [columnName, value]) => {
+function toModel(record, query) {
+  const discriminatorKey =
+    query.Model.discriminatorKey && sanitizeName(query.Model.discriminatorKey);
+  const lookups = Object.entries(record).reduce(
+    (lookup, [columnName, value]) => {
       setIn(lookup, columnName, value);
       return lookup;
-    }, {});
+    },
+    {}
+  );
 
   if (query.Model.children.length) {
     const baseData = lookups[query.Model.tableName];
@@ -189,8 +189,8 @@ function toModel (record, query) {
     }
   }
 
-  const documents = Object.entries(lookups)
-    .reduce((documents, [tableName, record]) => {
+  const documents = Object.entries(lookups).reduce(
+    (documents, [tableName, record]) => {
       const discriminator = discriminatorKey && record[discriminatorKey];
       const Model = getTableModel(query, tableName, discriminator);
       if (!Model) {
@@ -204,12 +204,13 @@ function toModel (record, query) {
       documents[tableName] = document;
 
       return documents;
-    }, {});
+    },
+    {}
+  );
   const baseDoc = documents[query.Model.tableName];
-  Object.values(query.joins)
-    .forEach((join) => {
-      baseDoc[join.fieldName] = documents[join.Model.tableName];
-    });
+  Object.values(query.joins).forEach(join => {
+    baseDoc[join.fieldName] = documents[join.Model.tableName];
+  });
 
   let Parent = query.Model.Parent;
   while (Parent) {

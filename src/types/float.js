@@ -2,14 +2,14 @@ const { isNil } = require('../utils');
 const Type = require('./type');
 
 class Float extends Type {
-  constructor (precision, scale) {
+  constructor(precision, scale) {
     super();
     this.dataType = 'float';
     this.precision = precision;
     this.scale = scale;
   }
 
-  cast (value) {
+  cast(value) {
     if (isNil(value)) {
       return;
     }
@@ -20,11 +20,11 @@ class Float extends Type {
     return parsed;
   }
 
-  defineColumn (table, columnName) {
+  defineColumn(table, columnName) {
     return table.float(columnName, this.precision, this.scale);
   }
 
-  isValid (value) {
+  isValid(value) {
     if (isNil(value)) {
       return true;
     }

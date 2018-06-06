@@ -2,13 +2,13 @@ const { isNil, isObject } = require('../utils');
 const Type = require('./type');
 
 class String extends Type {
-  constructor (size) {
+  constructor(size) {
     super();
     this.dataType = 'string';
     this.size = size;
   }
 
-  cast (value) {
+  cast(value) {
     if (isNil(value)) {
       return;
     }
@@ -18,11 +18,11 @@ class String extends Type {
     return `${value}`;
   }
 
-  defineColumn (table, columnName) {
+  defineColumn(table, columnName) {
     return table.string(columnName, this.size);
   }
 
-  isValid (value) {
+  isValid(value) {
     value = this.cast(value);
     if (isNil(value)) {
       return true;

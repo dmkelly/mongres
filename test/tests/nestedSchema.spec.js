@@ -54,13 +54,16 @@ describe('Nested Schemas', () => {
   describe('Model#constructor()', () => {
     it('Nested schemas are cast to new instances', () => {
       const line = new Line({
-        points: [{
-          x: 1,
-          y: 2
-        }, {
-          x: 3,
-          y: 4
-        }]
+        points: [
+          {
+            x: 1,
+            y: 2
+          },
+          {
+            x: 3,
+            y: 4
+          }
+        ]
       });
       expect(line).to.be.instanceof(Line);
       expect(line.points[0].x).to.equal(1);
@@ -72,13 +75,16 @@ describe('Nested Schemas', () => {
   describe('Model#save()', () => {
     it('Saves any new subdocuments', async () => {
       const line = new Line({
-        points: [{
-          x: 1,
-          y: 2
-        }, {
-          x: 3,
-          y: 4
-        }]
+        points: [
+          {
+            x: 1,
+            y: 2
+          },
+          {
+            x: 3,
+            y: 4
+          }
+        ]
       });
       await line.save();
       const savedLine = await helpers.query.findOne(Line.tableName, {
@@ -93,23 +99,32 @@ describe('Nested Schemas', () => {
 
     it('Saves new deeply nested subdocuments', async () => {
       const shape = new Shape({
-        lines: [{
-          points: [{
-            x: 1,
-            y: 2
-          }, {
-            x: 3,
-            y: 4
-          }]
-        }, {
-          points:[{
-            x: 5,
-            y: 6
-          }, {
-            x: 7,
-            y: 8
-          }]
-        }]
+        lines: [
+          {
+            points: [
+              {
+                x: 1,
+                y: 2
+              },
+              {
+                x: 3,
+                y: 4
+              }
+            ]
+          },
+          {
+            points: [
+              {
+                x: 5,
+                y: 6
+              },
+              {
+                x: 7,
+                y: 8
+              }
+            ]
+          }
+        ]
       });
       await shape.save();
 
@@ -126,13 +141,16 @@ describe('Nested Schemas', () => {
   describe('Model#findOne()', () => {
     it('Populates subdocuments on retrieval', async () => {
       const existingLine = new Line({
-        points: [{
-          x: 1,
-          y: 2
-        }, {
-          x: 3,
-          y: 4
-        }]
+        points: [
+          {
+            x: 1,
+            y: 2
+          },
+          {
+            x: 3,
+            y: 4
+          }
+        ]
       });
       await existingLine.save();
       const line = await Line.findOne({
@@ -147,23 +165,32 @@ describe('Nested Schemas', () => {
 
     it('Populates deeply nested subdocuments on retrieval', async () => {
       const existingShape = new Shape({
-        lines: [{
-          points: [{
-            x: 1,
-            y: 2
-          }, {
-            x: 3,
-            y: 4
-          }]
-        }, {
-          points:[{
-            x: 5,
-            y: 6
-          }, {
-            x: 7,
-            y: 8
-          }]
-        }]
+        lines: [
+          {
+            points: [
+              {
+                x: 1,
+                y: 2
+              },
+              {
+                x: 3,
+                y: 4
+              }
+            ]
+          },
+          {
+            points: [
+              {
+                x: 5,
+                y: 6
+              },
+              {
+                x: 7,
+                y: 8
+              }
+            ]
+          }
+        ]
       });
       await existingShape.save();
       const shape = await Shape.findOne({
@@ -189,25 +216,32 @@ describe('Nested Schemas', () => {
 
     beforeEach(async () => {
       existingLine1 = new Line({
-        points: [{
-          x: 1,
-          y: 2
-        }, {
-          x: 3,
-          y: 4
-        }]
+        points: [
+          {
+            x: 1,
+            y: 2
+          },
+          {
+            x: 3,
+            y: 4
+          }
+        ]
       });
       existingLine2 = new Line({
-        points: [{
-          x: 5,
-          y: 6
-        }, {
-          x: 7,
-          y: 8
-        }, {
-          x: 9,
-          y: 10
-        }]
+        points: [
+          {
+            x: 5,
+            y: 6
+          },
+          {
+            x: 7,
+            y: 8
+          },
+          {
+            x: 9,
+            y: 10
+          }
+        ]
       });
       await existingLine1.save();
       await existingLine2.save();
@@ -227,13 +261,16 @@ describe('Nested Schemas', () => {
   describe('Model#remove()', () => {
     it('Removes nested subdocuments', async () => {
       const line = new Line({
-        points: [{
-          x: 1,
-          y: 2
-        }, {
-          x: 3,
-          y: 4
-        }]
+        points: [
+          {
+            x: 1,
+            y: 2
+          },
+          {
+            x: 3,
+            y: 4
+          }
+        ]
       });
       await line.save();
       await line.remove();
@@ -244,23 +281,32 @@ describe('Nested Schemas', () => {
 
     it('Removes deeply nested subdocuments', async () => {
       const shape = new Shape({
-        lines: [{
-          points: [{
-            x: 1,
-            y: 2
-          }, {
-            x: 3,
-            y: 4
-          }]
-        }, {
-          points:[{
-            x: 5,
-            y: 6
-          }, {
-            x: 7,
-            y: 8
-          }]
-        }]
+        lines: [
+          {
+            points: [
+              {
+                x: 1,
+                y: 2
+              },
+              {
+                x: 3,
+                y: 4
+              }
+            ]
+          },
+          {
+            points: [
+              {
+                x: 5,
+                y: 6
+              },
+              {
+                x: 7,
+                y: 8
+              }
+            ]
+          }
+        ]
       });
       await shape.save();
       await shape.remove();
