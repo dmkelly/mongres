@@ -176,6 +176,10 @@ function modelFactory (instance, name, schema, BaseModel = Model) {
     }
   }
 
+  Object.defineProperty (Item, 'name', {
+    value: name
+  });
+
   Item.modelName = name;
   Item.tableName = sanitizeName(name);
   Item.schema = fullSchema;
