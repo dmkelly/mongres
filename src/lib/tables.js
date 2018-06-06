@@ -91,7 +91,7 @@ async function getConstraints (Model) {
     }
   }
 
-  if (Model.isParent) {
+  if (Model.children.length) {
     const constraint = new MultiUniqueConstraint(Model, [
       'id',
       Model.discriminatorKey
@@ -131,6 +131,5 @@ async function createTables (instance) {
 }
 
 module.exports = {
-  createTables,
-  sanitizeName
+  createTables
 };

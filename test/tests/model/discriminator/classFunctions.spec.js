@@ -71,6 +71,21 @@ describe('model/discriminator/classFunctions', () => {
       expect(rectangle.width).to.equal(3);
     });
 
+    it('Uses the ID from the parent table in both the parent and child tables', async () => {
+      const rectangle = await new Rectangle({
+        height: 10,
+        width: 4,
+        area: 40
+      }).save();
+      const circle = await new Circle({
+        area: 40,
+        diameter: Math.round(40 / (2 * Math.PI))
+      }).save();
+
+      expect(rectangle.id).to.equal(1);
+      expect(circle.id).to.equal(2);
+    });
+
     it('Validates before saving', async () => {
       expect(Rectangle.create({
         height: 5,
@@ -104,23 +119,24 @@ describe('model/discriminator/classFunctions', () => {
   });
 
   describe('#find()', () => {
-    beforeEach(() => {
-      return Promise.all([
-        new Rectangle({
-          height: 5,
-          width: 1,
-          area: 5
-        }).save(),
-        new Rectangle({
-          height: 10,
-          width: 4,
-          area: 40
-        }).save(),
-        new Circle({
-          area: 40,
-          diameter: Math.round(40 / (2 * Math.PI))
-        }).save()
-      ]);
+    let rect1;
+    let circle1;
+
+    beforeEach(async () => {
+      rect1 = await new Rectangle({
+        height: 5,
+        width: 1,
+        area: 5
+      }).save();
+      await new Rectangle({
+        height: 10,
+        width: 4,
+        area: 40
+      }).save();
+      circle1 = await new Circle({
+        area: 40,
+        diameter: Math.round(40 / (2 * Math.PI))
+      }).save();
     });
 
     it('Finds all items', async () => {
@@ -179,6 +195,35 @@ describe('model/discriminator/classFunctions', () => {
         .limit(3)
         .sort('-height');
       expect(results.length).to.equal(1);
+    });
+
+    it('Parent model can find all children', async () => {
+      const results = await Shape.find();
+      expect(results.length).to.equal(3);
+    });
+
+    it('Parent model casts to child type', async () => {
+      const results = await Shape.find();
+      const foundRect1 = results.find(shape => shape.id === rect1.id);
+      const foundCircle1 = results.find(shape => shape.id === circle1.id);
+      expect(foundRect1).to.be.ok;
+      expect(foundRect1).to.be.instanceof(Rectangle);
+      expect(foundCircle1).to.be.ok;
+      expect(foundCircle1).to.be.instanceof(Circle);
+    });
+
+    it('Parent model queries include child-specific properties', async () => {
+      const results = await Shape.find();
+      const foundRect1 = results.find(shape => shape.id === rect1.id);
+      const foundCircle1 = results.find(shape => shape.id === circle1.id);
+      expect(foundRect1).to.be.ok;
+      expect(foundRect1.height).to.equal(5);
+      expect(foundRect1.width).to.equal(1);
+      expect(foundRect1.area).to.equal(5);
+      expect(foundCircle1).to.be.ok;
+      expect(foundCircle1.height).not.to.be.ok;
+      expect(foundCircle1.area).to.equal(40);
+      expect(foundCircle1.diameter).to.equal(6);
     });
   });
 

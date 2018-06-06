@@ -3,6 +3,7 @@ const {
   isNumber,
   isObject,
   isString,
+  sanitizeName,
   setIn
 } = require('../utils');
 const filterMap = require('./filters');
@@ -26,7 +27,7 @@ function ensureColumnNamespace (field, Model) {
 }
 
 function getFieldsList (Model) {
-  return Object.values(Model.schema.fields)
+  const baseFields = Object.values(Model.schema.fields)
     .map((field) => {
       if (field.isNested) {
         return null;
@@ -34,14 +35,53 @@ function getFieldsList (Model) {
       return ensureColumnNamespace(field, Model);
     })
     .filter(Boolean);
+
+  if (!Model.children.length) {
+    return baseFields;
+  }
+
+  const allFields = Model.children.reduce((fieldsList, Child) => {
+    const childFields = Object.values(Child.subSchema.fields)
+      .map((field) => {
+        if (field.isNested) {
+          return null;
+        }
+        return ensureColumnNamespace(field, Child);
+      })
+      .filter(Boolean);
+    return fieldsList.concat(childFields);
+  }, baseFields);
+
+  return allFields;
 }
 
-function getTableModel (query, fieldName) {
-  const [tableName] = fieldName.split('.');
-  const Model = tableName === query.Model.tableName
-    ? query.Model
-    : query.joins[tableName].Model;
-  return Model;
+function getTableModel (query, tableName, discriminator) {
+  if (query.Model.children.length) {
+    for (let Child of query.Model.children) {
+      if (Child.tableName === tableName) {
+        return Child;
+      }
+      if (discriminator && Child.modelName === discriminator) {
+        return Child;
+      }
+    }
+  }
+  if (tableName === query.Model.tableName) {
+    return query.Model;
+  }
+  if (query.joins[tableName]) {
+    return query.joins[tableName].Model;
+  }
+
+  let Parent = query.Model.Parent;
+  while (Parent) {
+    if (Parent.tableName === tableName) {
+      return Parent;
+    }
+    Parent = Parent.Parent;
+  }
+
+  return null; // should never hit this
 }
 
 function getWhereBuilder (query, fieldName, filter) {
@@ -131,14 +171,28 @@ function recordToData (record, schema) {
 }
 
 function toModel (record, query) {
+  const discriminatorKey = query.Model.discriminatorKey &&
+    sanitizeName(query.Model.discriminatorKey);
   const lookups = Object.entries(record)
     .reduce((lookup, [columnName, value]) => {
       setIn(lookup, columnName, value);
       return lookup;
     }, {});
+
+  if (query.Model.children.length) {
+    const baseData = lookups[query.Model.tableName];
+    const childType = baseData[discriminatorKey];
+    if (childType) {
+      const childKey = sanitizeName(childType);
+      Object.assign(lookups[query.Model.tableName], lookups[childKey]);
+      query.Model.children.forEach(Child => delete lookups[Child.tableName]);
+    }
+  }
+
   const documents = Object.entries(lookups)
     .reduce((documents, [tableName, record]) => {
-      const Model = getTableModel(query, tableName);
+      const discriminator = discriminatorKey && record[discriminatorKey];
+      const Model = getTableModel(query, tableName, discriminator);
       if (!Model) {
         return documents;
       }
@@ -162,6 +216,18 @@ function toModel (record, query) {
     Object.assign(baseDoc, documents[Parent.tableName].toObject());
     delete baseDoc.data[Parent.tableName];
     Parent = Parent.Parent;
+  }
+
+  if (query.Model.children.length) {
+    const TypedModel = query.Model.children.find(ChildModel => {
+      return baseDoc[discriminatorKey] === ChildModel.tableName;
+    });
+
+    if (TypedModel) {
+      const typedBaseDoc = new TypedModel(baseDoc.data);
+      typedBaseDoc.isNew = false;
+      return typedBaseDoc;
+    }
   }
 
   return baseDoc;

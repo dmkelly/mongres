@@ -33,6 +33,7 @@ async function upsert (transaction, document) {
     parentDocument.isNew = document.isNew;
     await parentDocument.save({ transaction });
     document[document.Parent.tableName] = parentDocument.id;
+    document.id = parentDocument.id;
   }
 
   const data = serialize(document, document.subSchema);

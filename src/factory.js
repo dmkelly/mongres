@@ -2,8 +2,7 @@ const Field = require('./field');
 const Model = require('./model');
 const statics = require('./statics');
 const Types = require('./types');
-const { cloneDeep, isUndefined, isNil } = require('./utils');
-const { sanitizeName } = require('./lib/tables');
+const { cloneDeep, isUndefined, isNil, sanitizeName } = require('./utils');
 
 function extractDefaults (fields) {
   return Object.entries(fields)
@@ -71,7 +70,7 @@ function attachCore (Model, instance) {
     Item.Parent = Model;
     Item.discriminatorKey = discriminatorKey;
 
-    Model.isParent = true;
+    Model.children.push(Item);
     Model.discriminatorKey = discriminatorKey;
 
     attachProperties(Model, instance, schema);
@@ -182,6 +181,7 @@ function modelFactory (instance, name, schema, BaseModel = Model) {
   Item.schema = fullSchema;
   Item.subSchema = subSchema;
   Item.parentSchema = parentSchema;
+  Item.children = [];
   Item.prototype.Model = Item;
   Item.prototype.Model.tableName = Item.tableName;
 

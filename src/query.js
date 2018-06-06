@@ -26,12 +26,26 @@ class Query {
       .column(toColumns(getFieldsList(this.Model)));
     this.joins = {};
 
-    if (this.options.single) {
-      this.query = this.query.limit(1);
+    if (this.Model.children.length) {
+      for (let Child of this.Model.children) {
+        this.query = this.query.leftJoin(
+          Child.tableName,
+          `${this.Model.tableName}.id`,
+          `${Child.tableName}.id`
+        );
+      }
     }
 
     if (this.Model.Parent) {
-      this.populate(this.Model.Parent.tableName);
+      this.query = this.query.join(
+        this.Model.Parent.tableName,
+        `${this.Model.tableName}.id`,
+        `${this.Model.Parent.tableName}.id`
+      );
+    }
+
+    if (this.options.single) {
+      this.query = this.query.limit(1);
     }
 
     return this;
@@ -118,6 +132,7 @@ class Query {
       .then(async (results) => {
         const nestedFields = Object.values(this.Model.schema.fields)
           .filter((field) => field.isNested);
+
         if (!nestedFields.length) {
           return results.map((record) => toModel(record, this));
         }
