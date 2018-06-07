@@ -1,7 +1,7 @@
 {
   "name": "mongres",
   "version": "0.0.1",
-  "description": "ORM",
+  "description": "ORM for Postgres",
   "engines": {
     "node": ">=8"
   },
@@ -19,10 +19,13 @@
   "keywords": [
     "orm",
     "relational",
-    "sql"
+    "sql",
+    "postgres"
   ],
-  "author": "Dave Kelly",
+  "author": "Dave Kelly <dmk3534@gmail.com>",
   "license": "MIT",
+  "repository": "dmkelly/mongres",
+  "homepage": "https://github.com/dmkelly/mongres",
   "devDependencies": {
     "chai": "4.1.2",
     "chai-as-promised": "7.1.1",
