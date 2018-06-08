@@ -69,12 +69,7 @@ async function getConstraints(Model) {
       if (!Constraint) {
         continue;
       }
-
-      const constraint = new Constraint(Model, field);
-      const constraintExists = await constraint.exists();
-      if (!constraintExists) {
-        constraints.push(constraint);
-      }
+      constraints.push(new Constraint(Model, field));
     }
   }
 
@@ -85,10 +80,7 @@ async function getConstraints(Model) {
         type: Types.Integer()
       })
     );
-    const constraintExists = await constraint.exists();
-    if (!constraintExists) {
-      constraints.push(constraint);
-    }
+    constraints.push(constraint);
   }
 
   if (Model.children.length) {
@@ -96,13 +88,24 @@ async function getConstraints(Model) {
       'id',
       Model.discriminatorKey
     ]);
-    const constraintExists = await constraint.exists();
-    if (!constraintExists) {
-      constraints.push(constraint);
+    constraints.push(constraint);
+  }
+
+  const multiFieldConstraints = Model.subSchema.indexes.map(index => {
+    index.Model = Model;
+    return index;
+  });
+
+  const allConstraints = constraints.concat(multiFieldConstraints);
+  const newConstraints = [];
+  for (let constraint of allConstraints) {
+    const exists = await constraint.exists();
+    if (!exists) {
+      newConstraints.push(constraint);
     }
   }
 
-  return constraints;
+  return newConstraints;
 }
 
 async function createTableConstraints(instance, Model) {

@@ -1,10 +1,11 @@
 const Types = require('./types');
-const { isNil, isUndefined } = require('./utils');
+const { isNil, isUndefined, sanitizeName } = require('./utils');
 const Field = require('./field');
 const Middleware = require('./middleware');
 const Modifier = require('./modifier');
 const Virtual = require('./virtual');
 const { ValidationError } = require('./error');
+const { multi } = require('./lib/constraints');
 
 class Schema {
   constructor(fields, options = {}) {
@@ -20,6 +21,7 @@ class Schema {
       },
       {}
     );
+    this.indexes = [];
     this.options = options;
     this.methods = {};
     this.statics = {};
@@ -78,6 +80,15 @@ class Schema {
     schema.virtuals = new Map(this.virtuals);
 
     return schema;
+  }
+
+  index(fieldNames, options = {}) {
+    const columnNames = fieldNames.map(fieldName => sanitizeName(fieldName));
+
+    if (options.unique) {
+      return this.indexes.push(new multi.Unique(null, columnNames));
+    }
+    this.indexes.push(new multi.Index(null, columnNames));
   }
 
   path(fieldName) {
