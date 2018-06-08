@@ -34,6 +34,7 @@ describe('model/instanceFunctions', () => {
 
     const squareSchema = new Schema({
       height: {
+        enum: [5, 10],
         type: Schema.Types.Integer()
       },
       width: {
@@ -380,6 +381,13 @@ describe('model/instanceFunctions', () => {
           expect(err).to.be.instanceof(error.ValidationError);
           expect(err.details[0].message).to.equal('invalid width: -1');
         });
+    });
+
+    it('Enforces enums', () => {
+      const square = new Square({
+        height: 11
+      });
+      expect(square.validate()).to.be.rejectedWith(error.ValidationError);
     });
 
     it('Triggers pre middleware', async () => {

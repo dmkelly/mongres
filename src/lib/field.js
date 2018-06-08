@@ -26,6 +26,13 @@ function validateField(field, value) {
       }
     );
   }
+  if (field.enum && !field.enum.includes(value)) {
+    throw new ValidationError(
+      `Field ${field.fieldName} must be one of ${JSON.stringify(
+        field.enum
+      )}: ${value}`
+    );
+  }
   if (field.validator && isFunction(field.validator)) {
     if (!field.validator(value)) {
       const defaultMessage = `Validation failed on ${

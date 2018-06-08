@@ -14,8 +14,10 @@ class Field {
       this.refTableName = sanitizeName(this.ref);
     }
 
+    this.enum = definition.enum
+      ? definition.enum.map(entry => definition.type.cast(entry))
+      : null;
     this.required = definition.required;
-
     this.unique = definition.unique;
 
     this.hasIndex = !!definition.index;
