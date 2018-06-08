@@ -173,6 +173,13 @@ describe('Query', () => {
       expect(records[0].toObject()).to.deep.equal(plotB.toObject());
     });
 
+    it('Supports raw queries', async () => {
+      const records = await Plot.find().where(function(builder, knex) {
+        builder.where(knex.raw('a > ?', [1]));
+      });
+      expect(records.length).to.equal(2);
+    });
+
     it('Supports $eq', async () => {
       const records = await Plot.find().where({
         id: {

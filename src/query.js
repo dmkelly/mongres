@@ -112,7 +112,9 @@ class Query {
 
   where(filters = {}) {
     if (isFunction(filters)) {
-      this.query = this.query.where(filters);
+      this.query = this.query.where(function(builder) {
+        filters.call(this, builder, this.client);
+      });
       return this;
     }
 
