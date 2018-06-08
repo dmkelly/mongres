@@ -1,4 +1,4 @@
-const { isString, sanitizeName } = require('./utils');
+const { isFunction, isString, sanitizeName } = require('./utils');
 const { getRef, validateField } = require('./lib/field');
 const { ValidationError } = require('./error');
 
@@ -37,7 +37,9 @@ class Field {
       this.isNested = true;
     } else {
       this.type = definition.type;
-      this.defaultValue = this.type.cast(definition.default);
+      this.defaultValue = isFunction(definition.default)
+        ? definition.default
+        : this.type.cast(definition.default);
       this.isNested = false;
     }
   }

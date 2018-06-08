@@ -169,6 +169,10 @@ describe('model/core', () => {
         height: {
           type: Schema.Types.Integer(),
           default: 5
+        },
+        width: {
+          type: Schema.Types.Integer(),
+          default: () => 3 * 3
         }
       });
 
@@ -178,6 +182,11 @@ describe('model/core', () => {
     it('Defaults are applied if no value is specified', () => {
       const widget = new Widget();
       expect(widget.height).to.equal(5);
+    });
+
+    it('If the default is a function, the result of the function is used', () => {
+      const widget = new Widget();
+      expect(widget.width).to.equal(9);
     });
   });
 });
