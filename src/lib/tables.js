@@ -3,11 +3,10 @@ const SubClassConstraint = require('./constraints/subClass');
 const MultiUniqueConstraint = require('./constraints/multiUnique');
 const Field = require('../field');
 const Types = require('../types');
-const { sanitizeName } = require('../utils');
 
 function defineField(table, fieldName, field) {
   if (!field.isNested) {
-    const columnName = sanitizeName(fieldName);
+    const columnName = fieldName;
     field.type.defineColumn(table, columnName);
   }
 }

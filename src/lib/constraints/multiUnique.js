@@ -1,11 +1,13 @@
 const MultiField = require('./multiField');
 const { getConstraints } = require('../describe');
+const { sanitizeName } = require('../../utils');
 
 class MultiUnique extends MultiField {
   async exists() {
     const { instance, tableName } = this.Model;
     const constraints = await getConstraints(instance, tableName);
-    const name = `${tableName}_${this.fieldNames.join('_')}_unique`;
+    const columnNames = this.fieldNames.map(sanitizeName);
+    const name = `${tableName}_${columnNames.join('_')}_unique`;
     const constraint = constraints.find(c => {
       return (
         c.constraint_type === 'UNIQUE' &&

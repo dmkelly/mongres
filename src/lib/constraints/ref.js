@@ -1,23 +1,23 @@
 const Constraint = require('./constraint');
 const { getConstraints } = require('../describe');
 const { getRef } = require('../field');
-
-async function hasForeignKey(Model, columnName) {
-  const constraints = await getConstraints(Model.instance, Model.tableName);
-  const foreignKey = constraints.find(c => {
-    return (
-      c.constraint_type === 'FOREIGN KEY' &&
-      c.table_name === Model.tableName &&
-      c.constraint_name === `${Model.tableName}_${columnName}_foreign`
-    );
-  });
-
-  return !!foreignKey;
-}
+const { sanitizeName } = require('../../utils');
 
 class Ref extends Constraint {
   async exists() {
-    return await hasForeignKey(this.Model, this.field.columnName);
+    const Model = this.Model;
+    const columnName = sanitizeName(this.field.columnName);
+    const constraints = await getConstraints(Model.instance, Model.tableName);
+    const constraintName = `${Model.tableName}_${columnName}_foreign`;
+    const foreignKey = constraints.find(c => {
+      return (
+        c.constraint_type === 'FOREIGN KEY' &&
+        c.table_name === Model.tableName &&
+        c.constraint_name === constraintName
+      );
+    });
+
+    return !!foreignKey;
   }
 
   create(table) {

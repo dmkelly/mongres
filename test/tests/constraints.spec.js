@@ -87,7 +87,7 @@ describe('constraints', () => {
     const Model = mongres.model('Test', schema);
     await mongres.connect(helpers.connectionInfo);
     const rows = await helpers.table.getIndexes(Model.tableName);
-    const index = rows.find(row => row.column_name === 'testfield');
+    const index = rows.find(row => row.column_name === 'testField');
     expect(index).to.be.ok;
     expect(index.index_type).to.equal('btree');
   });
@@ -102,7 +102,7 @@ describe('constraints', () => {
     const Model = mongres.model('Test', schema);
     await mongres.connect(helpers.connectionInfo);
     const rows = await helpers.table.getIndexes(Model.tableName);
-    const index = rows.find(row => row.column_name === 'testfield');
+    const index = rows.find(row => row.column_name === 'testField');
     expect(index).to.be.ok;
     expect(index.index_type).to.equal('hash');
   });

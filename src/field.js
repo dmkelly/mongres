@@ -6,7 +6,7 @@ class Field {
   constructor(schema, fieldName, definition) {
     this.schema = schema; // schema.instance is available once the model is created
     this.fieldName = fieldName;
-    this.columnName = sanitizeName(fieldName);
+    this.columnName = fieldName;
     this.definition = definition;
 
     this.ref = definition.ref;

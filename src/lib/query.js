@@ -169,8 +169,7 @@ function recordToData(record, schema) {
 }
 
 function toModel(record, query) {
-  const discriminatorKey =
-    query.Model.discriminatorKey && sanitizeName(query.Model.discriminatorKey);
+  const discriminatorKey = query.Model.discriminatorKey;
   const lookups = Object.entries(record).reduce(
     (lookup, [columnName, value]) => {
       setIn(lookup, columnName, value);
@@ -183,8 +182,8 @@ function toModel(record, query) {
     const baseData = lookups[query.Model.tableName];
     const childType = baseData[discriminatorKey];
     if (childType) {
-      const childKey = sanitizeName(childType);
-      Object.assign(lookups[query.Model.tableName], lookups[childKey]);
+      const childTableName = sanitizeName(childType);
+      Object.assign(lookups[query.Model.tableName], lookups[childTableName]);
       query.Model.children.forEach(Child => delete lookups[Child.tableName]);
     }
   }

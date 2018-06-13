@@ -44,7 +44,7 @@ describe('model/path', () => {
       });
       await document.save();
       const records = await helpers.query.find(Model.tableName);
-      expect(records[0].testvalue).to.equal(5);
+      expect(records[0].testValue).to.equal(5);
     });
   });
 
@@ -85,7 +85,7 @@ describe('model/path', () => {
       document.testValue = 8;
       await document.save();
       const records = await helpers.query.find(Model.tableName);
-      expect(records[0].testvalue).to.equal(9);
+      expect(records[0].testValue).to.equal(9);
     });
   });
 });

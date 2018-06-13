@@ -1,5 +1,5 @@
 const Types = require('./types');
-const { isNil, isUndefined, sanitizeName } = require('./utils');
+const { isNil, isUndefined } = require('./utils');
 const Field = require('./field');
 const Middleware = require('./middleware');
 const Modifier = require('./modifier');
@@ -82,9 +82,7 @@ class Schema {
     return schema;
   }
 
-  index(fieldNames, options = {}) {
-    const columnNames = fieldNames.map(fieldName => sanitizeName(fieldName));
-
+  index(columnNames, options = {}) {
     if (options.unique) {
       return this.indexes.push(new multi.Unique(null, columnNames));
     }

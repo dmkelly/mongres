@@ -1,12 +1,13 @@
 const Constraint = require('./constraint');
 const { getConstraints } = require('../describe');
+const { sanitizeName } = require('../../utils');
 
 async function hasForeignKey(Model, columnName) {
   const constraints = await getConstraints(Model.instance, Model.tableName);
   const name = [
     Model.tableName,
-    columnName,
-    Model.discriminatorKey,
+    sanitizeName(columnName),
+    sanitizeName(Model.discriminatorKey),
     'foreign'
   ].join('_');
   const foreignKey = constraints.find(c => {
