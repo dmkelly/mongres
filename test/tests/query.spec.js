@@ -199,6 +199,15 @@ describe('Query', () => {
       expect(records.length).to.equal(2);
     });
 
+    it(' Supports not $exists', async () => {
+      const records = await Plot.find().where({
+        c: {
+          $exists: false
+        }
+      });
+      expect(records.length).to.equal(1);
+    });
+
     it('Supports $gt', async () => {
       const records = await Plot.find().where({
         a: {
