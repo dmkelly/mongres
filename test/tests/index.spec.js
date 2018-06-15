@@ -43,6 +43,21 @@ describe('Mongres', () => {
       await mongres.disconnect();
       await mongres.connect(helpers.connectionInfo);
     });
+
+    it('Indicates that it is not connected before connection', () => {
+      expect(mongres.isConnected).to.equal(false);
+    });
+
+    it('Indicates that it is connected after connection', async () => {
+      await mongres.connect(helpers.connectionInfo);
+      expect(mongres.isConnected).to.equal(true);
+    });
+
+    it('Indicates that it is not connected after disconnection', async () => {
+      await mongres.connect(helpers.connectionInfo);
+      await mongres.disconnect();
+      expect(mongres.isConnected).to.equal(false);
+    });
   });
 
   describe('#model()', () => {

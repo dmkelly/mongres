@@ -19,6 +19,7 @@ class Mongres {
     this.Schema = Schema;
     this.models = new Map();
     this.namespace = 'public';
+    this.isConnected = false;
   }
 
   get dbSchema() {
@@ -27,13 +28,17 @@ class Mongres {
       : this.client.schema;
   }
 
-  connect(connectionInfo) {
+  async connect(connectionInfo) {
     this.client = knex(connectionInfo);
-    return createTables(this);
+    await createTables(this);
+    this.isConnected = true;
   }
 
-  disconnect() {
-    return this.client.destroy();
+  async disconnect() {
+    if (this.client) {
+      await this.client.destroy();
+    }
+    this.isConnected = false;
   }
 
   model(name, schema) {
