@@ -1,6 +1,7 @@
 const Constraint = require('./constraint');
 const { getConstraints } = require('../describe');
 const { sanitizeName } = require('../../utils');
+const MultiUnique = require('./multiUnique');
 
 async function hasForeignKey(Model, columnName) {
   const constraints = await getConstraints(Model.instance, Model.tableName);
@@ -21,20 +22,37 @@ async function hasForeignKey(Model, columnName) {
   return !!foreignKey;
 }
 
+async function hasUniqueConstraint(Model, fieldNames) {
+  const constraint = new MultiUnique(Model, fieldNames);
+  return await constraint.exists();
+}
+
 class SubClass extends Constraint {
   async exists() {
-    return await hasForeignKey(this.Model, this.field.columnName);
+    const fields = [this.field.columnName, this.Model.discriminatorKey];
+    this.foreignKeyExists = await hasForeignKey(
+      this.Model,
+      this.field.columnName
+    );
+    this.uniqueConstraintExists = await hasUniqueConstraint(this.Model, fields);
+    return this.foreignKeyExists && this.uniqueConstraintExists;
   }
 
   create(table) {
-    table.unique([this.field.columnName, this.Model.discriminatorKey]);
+    const fields = [this.field.columnName, this.Model.discriminatorKey];
 
-    table
-      .foreign([this.field.columnName, this.Model.discriminatorKey])
-      .references(['id', this.Model.discriminatorKey])
-      .on(this.Model.Parent.tableName)
-      .onDelete('CASCADE')
-      .onUpdate('CASCADE');
+    if (!this.uniqueConstraintExists) {
+      table.unique(fields);
+    }
+
+    if (!this.foreignKeyExists) {
+      table
+        .foreign(fields)
+        .references(['id', this.Model.discriminatorKey])
+        .on(this.Model.Parent.tableName)
+        .onDelete('CASCADE')
+        .onUpdate('CASCADE');
+    }
   }
 }
 
