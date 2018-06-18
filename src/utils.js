@@ -24,6 +24,14 @@ async function invokeSeries(fns) {
   }
 }
 
+function mapToLookup(array) {
+  return array.map(field => {
+    const obj = {};
+    obj[field] = field;
+    return obj;
+  });
+}
+
 function sanitizeName(name) {
   return name
     .trim()
@@ -51,6 +59,7 @@ module.exports = {
   isObject: _.isObject,
   isString: _.isString,
   isUndefined: _.isUndefined,
+  mapToLookup,
   pick: _.pick,
   sanitizeName,
   setIn: _.set,

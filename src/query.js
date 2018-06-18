@@ -1,49 +1,32 @@
 const {
+  adaptors,
   ensureColumnNamespace,
   getFieldsList,
   getWhereBuilder,
   normalizeSortArgs,
-  toColumns,
   toModel
 } = require('./lib/query');
 const { getBackRefFields } = require('./lib/model');
-const { isFunction, pick } = require('./utils');
-
-class Join {
-  constructor({ fieldName, Model }) {
-    this.fieldName = fieldName;
-    this.Model = Model;
-  }
-}
+const { isFunction, mapToLookup: toColumns, pick } = require('./utils');
 
 class Query {
   constructor(Model, options = {}) {
     this.Model = Model;
     this.options = options;
     this.client = this.Model.instance.client;
-    this.query = this.client
-      .table(this.Model.tableName)
-      .select()
-      .column(toColumns(getFieldsList(this.Model)));
-    this.joins = {};
 
+    this.query = this.client.table(this.Model.tableName);
+    this.query = this.query.select();
+
+    this.adaptors = [];
     if (this.Model.children.length) {
-      for (let Child of this.Model.children) {
-        this.query = this.query.leftJoin(
-          Child.tableName,
-          `${this.Model.tableName}.id`,
-          `${Child.tableName}.id`
-        );
-      }
+      this.adaptors.push(new adaptors.Children(this));
+    }
+    if (this.Model.Parent) {
+      this.adaptors.push(new adaptors.Parent(this));
     }
 
-    if (this.Model.Parent) {
-      this.query = this.query.join(
-        this.Model.Parent.tableName,
-        `${this.Model.tableName}.id`,
-        `${this.Model.Parent.tableName}.id`
-      );
-    }
+    this.query = this.query.column(toColumns(getFieldsList(this)));
 
     if (this.options.single) {
       this.query = this.query.limit(1);
@@ -77,17 +60,9 @@ class Query {
       return this;
     }
 
-    this.query = this.query
-      .leftJoin(
-        Ref.tableName,
-        `${this.Model.tableName}.${fieldName}`,
-        `${Ref.tableName}.id`
-      )
-      .column(toColumns(getFieldsList(Ref)));
-    this.joins[Ref.tableName] = new Join({
-      fieldName,
-      Model: Ref
-    });
+    if (!adaptors.Populate.exists(this, Ref, field)) {
+      this.adaptors.push(new adaptors.Populate(this, Ref, field));
+    }
 
     return this;
   }
@@ -124,7 +99,7 @@ class Query {
     this.query = Object.entries(filters).reduce(
       (query, [fieldName, filter]) => {
         const field = schema.fields[fieldName];
-        const columnName = ensureColumnNamespace(field, this.Model);
+        const columnName = ensureColumnNamespace(this, field);
         return query.where(getWhereBuilder(this, columnName, filter));
       },
       this.query
