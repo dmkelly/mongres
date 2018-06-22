@@ -1,6 +1,13 @@
 const Schema = require('./schema');
-const { cloneDeep, invoke, invokeSeries, isUndefined } = require('./utils');
+const {
+  cloneDeep,
+  getRelationTableName,
+  invoke,
+  invokeSeries,
+  isUndefined
+} = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
+const { getRef } = require('./lib/field');
 
 async function invokeMiddleware(document, hook, middleware, isBlocking) {
   const fns = middleware.map(mid => () => mid.execute(hook, document));
@@ -17,7 +24,7 @@ async function saveNestedFields(transaction, document) {
       const values = document[field.fieldName];
       const backRefFields = getBackRefFields(document.Model, field.type.schema);
 
-      await Promise.all(
+      return Promise.all(
         values.map(nestedDoc => {
           backRefFields.forEach(backRefField => {
             nestedDoc[backRefField.fieldName] = backRefField.cast(document.id);
@@ -25,6 +32,40 @@ async function saveNestedFields(transaction, document) {
           return nestedDoc.save({ transaction });
         })
       );
+
+      // const Ref = getRef(field);
+      // const tableName = getRelationTableName([document.Model, Ref]);
+      // const selfFieldName = document.Model.tableName;
+      // const joinFieldName = Ref.tableName;
+
+      // const existing = await transaction.select().from(tableName).where({
+      //   [selfFieldName]: document.id
+      // });
+      // const existingJoinIds = existing.map(row => row[joinFieldName]);
+      // const currentJoinIds = values.map((item) => {
+      //   if (item instanceof Model) {
+      //     return item.id;
+      //   }
+      //   return item;
+      // });
+
+      // TODO Finsih this stuff up
+      // const idsToRemove = in existing but not in current
+      // const idsToInsert = in current but not in existing
+
+      // console.log('existing', existing);
+
+      // for (let item of values) {
+      //   try {
+      //     await transaction.insert({
+      //       [selfFieldName]: document.id,
+      //       [joinFieldName]: value
+      //     })
+      //       .into(tableName);
+      //   } catch (err) {
+
+      //   }
+      // }
     }
   }
 }
@@ -67,6 +108,17 @@ class Model {
     this.subSchema = defaultSchema;
   }
 
+  // async addRelation(fieldName, document) {
+  //   const field = this.schema.fields[fieldName];
+  //   if (!field) {
+  //     throw await new Error(`Field ${fieldName} does not exist on ${this.modelName}`);
+  //   }
+  //   if (!field.isMulti) {
+  //     throw await new Error(`Field ${fieldName} on ${this.model} does not support relations`);
+  //   }
+
+  // }
+
   isModified(fieldName) {
     const field = this.schema.fields[fieldName];
     if (!field) {
@@ -85,8 +137,13 @@ class Model {
   toObject() {
     return Object.values(this.schema.fields).reduce((data, field) => {
       const fieldName = field.fieldName;
-      if (field.isNested) {
-        data[fieldName] = this[fieldName].map(item => item.toObject());
+      if (field.isMulti) {
+        data[fieldName] = this[fieldName].map(item => {
+          if (item instanceof Model) {
+            return item.toObject();
+          }
+          return item;
+        });
       } else {
         const value = this[fieldName];
         if (value instanceof Model) {

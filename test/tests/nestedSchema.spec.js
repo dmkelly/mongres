@@ -4,9 +4,10 @@ const { Mongres, Schema } = require('../../src');
 describe('Nested Schemas', () => {
   let mongres;
   let Point;
+  let PointLight;
   let Line;
+  let LineLight;
   let Shape;
-  // let Widget;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
@@ -27,34 +28,47 @@ describe('Nested Schemas', () => {
     });
     Point = mongres.model('Point', pointSchema);
 
+    const pointLightSchema = new Schema({
+      line: {
+        type: Schema.Types.Integer(),
+        ref: 'LineLight'
+      },
+      x: {
+        type: Schema.Types.Integer()
+      },
+      y: {
+        type: Schema.Types.Integer()
+      }
+    });
+    PointLight = mongres.model('PointLight', pointLightSchema);
+
     const lineSchema = new Schema({
       shape: {
         type: Schema.Types.Integer(),
         ref: 'Shape'
       },
       points: {
-        type: [Point]
+        type: [Point],
+        attach: true
       }
     });
     Line = mongres.model('Line', lineSchema);
 
+    const lineLightSchema = new Schema({
+      points: {
+        type: [PointLight],
+        ref: 'PointLight'
+      }
+    });
+    LineLight = mongres.model('LineLight', lineLightSchema);
+
     const shapeSchema = new Schema({
       lines: {
-        type: [Line]
+        type: [Line],
+        attach: true
       }
     });
     Shape = mongres.model('Shape', shapeSchema);
-
-    // const widgetSchema = new Schema({
-    //   name: {
-    //     type:Schema.Types.String()
-    //   },
-    //   points: {
-    //     type: [Point],
-    //     ref: 'Point'
-    //   }
-    // });
-    // Widget = mongres.model('Widget', widgetSchema);
 
     await mongres.connect(helpers.connectionInfo);
   });
@@ -175,52 +189,29 @@ describe('Nested Schemas', () => {
       expect(line.points[1]).to.be.instanceof(Point);
     });
 
-    // it('Does not automatically populate nested refs on retrieval', async () => {
-    //   const point1 = await Point.create({
-    //     x: 1,
-    //     y: 2
-    //   });
-    //   const point2 = await Point.create({
-    //     x: 3,
-    //     y: 4
-    //   });
+    it('Populates ref lists with #populate()', async () => {
+      const existingLine = await LineLight.create({
+        name: 'test'
+      });
+      const point1 = await PointLight.create({
+        line: existingLine.id,
+        x: 1,
+        y: 2
+      });
+      const point2 = await PointLight.create({
+        line: existingLine.id,
+        x: 3,
+        y: 4
+      });
 
-    //   const existingWidget = await Widget.create({
-    //     name: 'test',
-    //     points: [point1.id, point2.id]
-    //   });
+      const [line] = await LineLight.find(existingLine.id).populate('points');
 
-    //   const widget = await Widget.findOne({
-    //     id: existingWidget.id
-    //   });
-    //   expect(widget).to.be.ok;
-    //   expect(widget.points).to.deep.equal([point1.id, point2.id]);
-    // });
-
-    // it('Populates nested refs with #populate()', async () => {
-    //   const point1 = await Point.create({
-    //     x: 1,
-    //     y: 2
-    //   });
-    //   const point2 = await Point.create({
-    //     x: 3,
-    //     y: 4
-    //   });
-
-    //   const existingWidget = await Widget.create({
-    //     name: 'test',
-    //     points: [point1.id, point2.id]
-    //   });
-
-    //   const widget = await Widget.findOne({
-    //     id: existingWidget.id
-    //   })
-    //     .populate('points');
-
-    //   expect(widget).to.be.ok;
-    //   expect(widget.points[0]).to.be.instanceof(Point);
-    //   expect(widget.points[1]).to.be.instanceof(Point);
-    // });
+      expect(line).to.be.ok;
+      expect(line.points[0]).to.be.instanceof(PointLight);
+      expect(line.points[1]).to.be.instanceof(PointLight);
+      expect(line.points.find(point => point.id === point1.id)).to.be.ok;
+      expect(line.points.find(point => point.id === point2.id)).to.be.ok;
+    });
 
     it('Populates deeply nested subdocuments on retrieval', async () => {
       const existingShape = new Shape({

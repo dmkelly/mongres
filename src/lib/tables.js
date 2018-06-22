@@ -3,9 +3,18 @@ const SubClassConstraint = require('./constraints/subClass');
 const MultiUniqueConstraint = require('./constraints/multiUnique');
 const Field = require('../field');
 const Types = require('../types');
+const { getConstraints: fetchExistingConstraints } = require('./describe');
+const { getRelationTableName, sanitizeName } = require('../utils');
+
+function getConstraintForAttribute(attributeName, field) {
+  if (field.isMulti && field.ref) {
+    return null;
+  }
+  return constraintDescriptions[attributeName];
+}
 
 function defineField(table, fieldName, field) {
-  if (!field.isNested) {
+  if (!field.isMulti) {
     const columnName = fieldName;
     field.type.defineColumn(table, columnName);
   }
@@ -18,13 +27,10 @@ function defineTable(table, schema) {
 }
 
 async function createTable(instance, Model) {
-  const dbSchema = instance.namespace
-    ? instance.client.schema.withSchema(instance.namespace)
-    : instance.client.schema;
-  const tableExists = await dbSchema.hasTable(Model.tableName);
+  const tableExists = await instance.dbSchema.hasTable(Model.tableName);
 
   if (!tableExists) {
-    await dbSchema.createTable(Model.tableName, function(table) {
+    await instance.dbSchema.createTable(Model.tableName, function(table) {
       defineTable(table, Model.subSchema);
     });
   }
@@ -64,7 +70,7 @@ async function getConstraints(Model) {
 
     for (let j = 0; j < attributeKeys.length; j += 1) {
       const attributeKey = attributeKeys[j];
-      const Constraint = constraintDescriptions[attributeKey];
+      const Constraint = getConstraintForAttribute(attributeKey, field);
       if (!Constraint) {
         continue;
       }
@@ -122,13 +128,91 @@ async function createTableConstraints(instance, Model) {
   await updateForeignKeys(instance);
 }
 
+function getManyRelations(instance, Model) {
+  return Object.values(Model.schema.fields).reduce((relations, field) => {
+    if (field.isMulti && field.ref) {
+      relations.push([Model, instance.model(field.ref)]);
+    }
+    return relations;
+  }, []);
+}
+
+async function createRelation(instance, relation) {
+  const tableName = getRelationTableName(relation);
+  const tableExists = await instance.dbSchema.hasTable(tableName);
+
+  if (!tableExists) {
+    await instance.dbSchema.createTable(tableName, function(table) {
+      relation.forEach(Model => {
+        table.integer(Model.tableName);
+      });
+    });
+  }
+}
+
+async function relationConstraintExists(instance, relation) {
+  const tableName = getRelationTableName(relation);
+  const constraints = await fetchExistingConstraints(instance, tableName);
+  const constraintName = [
+    tableName,
+    sanitizeName(relation[0].tableName),
+    'foreign'
+  ].join('_');
+
+  return constraints.some(
+    constraint =>
+      constraint.table_name === tableName &&
+      constraint.constraint_type === 'FOREIGN KEY' &&
+      constraint.constraint_name === constraintName
+  );
+}
+
+async function createRelationConstraints(instance, relation) {
+  const exists = await relationConstraintExists(instance, relation);
+  if (exists) {
+    return;
+  }
+  const tableName = getRelationTableName(relation);
+  const linkedTableNames = relation.map(Model => Model.tableName);
+  linkedTableNames.sort();
+  const [tableA, tableB] = linkedTableNames;
+
+  await instance.dbSchema.alterTable(tableName, table => {
+    table.primary(linkedTableNames);
+    table
+      .foreign(tableA)
+      .references(`${tableA}.id`)
+      .onDelete('CASCADE')
+      .onUpdate('CASCADE');
+    table
+      .foreign(tableB)
+      .references(`${tableB}.id`)
+      .onDelete('CASCADE')
+      .onUpdate('CASCADE');
+  });
+}
+
 async function createTables(instance) {
   for (let Model of instance.models.values()) {
     await createTable(instance, Model);
+
+    const manyRelations = getManyRelations(instance, Model);
+    if (manyRelations.length) {
+      for (let relation of manyRelations) {
+        await createRelation(instance, relation);
+      }
+    }
   }
 
   for (let Model of instance.models.values()) {
     await createTableConstraints(instance, Model);
+
+    const manyRelations = getManyRelations(instance, Model);
+    if (manyRelations.length) {
+      for (let relation of manyRelations) {
+        await createRelationConstraints(instance, relation);
+      }
+    }
   }
 }
 

@@ -11,7 +11,7 @@ class Adaptor {
   getFieldsList(Model = this.query.Model) {
     const baseFields = Object.values(Model.subSchema.fields)
       .map(field => {
-        if (field.isNested) {
+        if (field.isMulti) {
           return null;
         }
         return this.ensureColumnNamespace(field, Model);
@@ -23,6 +23,10 @@ class Adaptor {
 
   getModelForTable(/*tableName, discriminator*/) {
     return this.query.Model;
+  }
+
+  async reconcile(results) {
+    return results;
   }
 
   toModel(lookups, document, Model = this.query.Model) {

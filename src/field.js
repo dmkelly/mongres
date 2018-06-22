@@ -32,22 +32,22 @@ class Field {
       this.validationTemplate = definition.validate.message;
     }
 
-    if (Array.isArray(definition.type)) {
-      this.type = definition.type[0];
+    this.isMulti = Array.isArray(definition.type);
+    this.isNested = this.isMulti && !!definition.attach;
 
+    if (this.isMulti) {
+      this.type = definition.type[0];
       this.defaultValue = [];
-      this.isNested = true;
     } else {
       this.type = definition.type;
       this.defaultValue = isFunction(definition.default)
         ? definition.default
         : this.type.cast(definition.default);
-      this.isNested = false;
     }
   }
 
   cast(value) {
-    if (!this.isNested) {
+    if (!this.isMulti) {
       if (this.ref) {
         const Ref = getRef(this);
         if (value instanceof Ref) {
@@ -88,13 +88,14 @@ class Field {
   }
 
   validate(value) {
-    if (!this.isNested) {
+    if (!this.isMulti) {
       const Ref = getRef(this);
       if (Ref && value instanceof Ref) {
         return value.validate();
       }
       return validateField(this, value);
     }
+
     if (value && !Array.isArray(value)) {
       throw new ValidationError(
         `Nested field ${this.fieldName} should be a list of ${
@@ -105,6 +106,7 @@ class Field {
         }
       );
     }
+
     value.forEach(item => item.validate());
   }
 }

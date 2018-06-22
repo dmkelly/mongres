@@ -8,6 +8,9 @@ describe('model/instanceFunctions', () => {
   let Widget;
   let Point;
   let Line;
+  let NestedPoint;
+  let Gadget;
+  let Device;
   let preRemoveMiddleware;
   let postRemoveMiddleware;
   let preSaveMiddleware;
@@ -78,6 +81,48 @@ describe('model/instanceFunctions', () => {
     Widget = mongres.model('Widget', widgetSchema);
     Point = mongres.model('Point', pointSchema);
     Line = mongres.model('Line', lineSchema);
+
+    NestedPoint = mongres.model(
+      'NestedPoint',
+      new Schema({
+        gadget: {
+          type: Schema.Types.Integer(),
+          ref: 'Gadget'
+        },
+        x: {
+          type: Schema.Types.Integer()
+        },
+        y: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
+
+    Gadget = mongres.model(
+      'Gadget',
+      new Schema({
+        points: {
+          type: [NestedPoint],
+          attach: true
+        },
+        size: {
+          type: Schema.Types.Integer()
+        }
+      })
+    );
+
+    Device = mongres.model(
+      'Device',
+      new Schema({
+        name: {
+          type: Schema.Types.String()
+        },
+        gadget: {
+          type: Schema.Types.Integer(),
+          ref: 'Gadget'
+        }
+      })
+    );
 
     await mongres.connect(helpers.connectionInfo);
   });
@@ -174,6 +219,65 @@ describe('model/instanceFunctions', () => {
       line.start = 1000;
       await line.populate('start');
       expect(line.start).to.equal(1000);
+    });
+
+    describe('Complicated scenarios', () => {
+      let device1;
+      let gadget1;
+      let device2;
+      let gadget2;
+
+      beforeEach(async () => {
+        gadget1 = await Gadget.create({
+          points: [
+            {
+              x: 1,
+              y: 2
+            },
+            {
+              x: 3,
+              y: 4
+            }
+          ],
+          size: 2
+        });
+
+        gadget2 = await Gadget.create({
+          points: [
+            {
+              x: 5,
+              y: 6
+            },
+            {
+              x: 7,
+              y: 8
+            }
+          ],
+          size: 2
+        });
+
+        device1 = await Device.create({
+          name: 'a',
+          gadget: gadget1.id
+        });
+
+        device2 = await Device.create({
+          name: 'b',
+          gadget: gadget2.id
+        });
+      });
+
+      it('Handles nested documents on the populated field', async () => {
+        const [a, b] = await Device.find()
+          .populate('gadget')
+          .sort('name', 1);
+        expect(a.id).to.equal(device1.id);
+        expect(b.id).to.equal(device2.id);
+        expect(a.gadget).to.be.instanceof(Gadget);
+        expect(a.gadget.points.length).to.equal(2);
+        expect(a.gadget.points[0]).to.be.instanceof(NestedPoint);
+        expect(a.gadget.points[1]).to.be.instanceof(NestedPoint);
+      });
     });
   });
 

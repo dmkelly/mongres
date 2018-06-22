@@ -6,7 +6,6 @@ const {
   normalizeSortArgs,
   toModel
 } = require('./lib/query');
-const { getBackRefFields } = require('./lib/model');
 const { isFunction, mapToLookup: toColumns, pick } = require('./utils');
 
 class Query {
@@ -25,6 +24,11 @@ class Query {
     if (this.Model.Parent) {
       this.adaptors.push(new adaptors.Parent(this));
     }
+    Object.values(this.Model.schema.fields).forEach(field => {
+      if (field.isNested) {
+        this.adaptors.push(new adaptors.Nested(this, field));
+      }
+    });
 
     this.query = this.query.column(toColumns(getFieldsList(this)));
 
@@ -110,50 +114,12 @@ class Query {
 
   then(callback) {
     return this.query
+      .then(records => records.map(record => toModel(record, this)))
       .then(async results => {
-        const nestedFields = Object.values(this.Model.schema.fields).filter(
-          field => field.isNested
-        );
-
-        if (!nestedFields.length) {
-          return results.map(record => toModel(record, this));
+        for (let adaptor of this.adaptors) {
+          results = await adaptor.reconcile(results);
         }
-
-        const idField = `${this.Model.tableName}.id`;
-        const nestedResults = await Promise.all(
-          nestedFields.map(field => {
-            const backRefField = getBackRefFields(
-              this.Model,
-              field.type.schema
-            )[0];
-
-            return new Query(field.type).where({
-              [backRefField.fieldName]: {
-                $in: results.map(item => item[idField])
-              }
-            });
-          })
-        );
-
-        return results.map(record => {
-          for (let i = 0; i < nestedFields.length; i += 1) {
-            const field = nestedFields[i];
-            const backRefField = getBackRefFields(
-              this.Model,
-              field.type.schema
-            )[0];
-            const results = nestedResults[i].filter(item => {
-              return item[backRefField.fieldName] === record[idField];
-            });
-
-            // Namespace with table name so `toModel` knows how to convert the
-            // record data to the model
-            const attachKey = `${this.Model.tableName}.${field.fieldName}`;
-            record[attachKey] = results;
-          }
-
-          return toModel(record, this);
-        });
+        return results;
       })
       .then(records => {
         if (!this.options.single) {

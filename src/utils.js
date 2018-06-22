@@ -12,6 +12,13 @@ function escapeRegExp(text) {
   return text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+function getRelationTableName(relation) {
+  const [ModelA, ModelB] = relation;
+  const tableNames = [ModelA.tableName, ModelB.tableName];
+  tableNames.sort();
+  return tableNames.join('_');
+}
+
 function invoke(fns) {
   for (let fn of fns) {
     fn();
@@ -50,6 +57,8 @@ module.exports = {
   castError,
   cloneDeep: _.cloneDeep,
   escapeRegExp,
+  getRelationTableName,
+  groupBy: _.groupBy,
   invoke,
   invokeSeries,
   isDate: _.isDate,
