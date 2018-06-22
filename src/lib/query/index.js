@@ -32,13 +32,6 @@ function getFieldsList(query) {
 }
 
 function getTableModel(query, tableName, discriminator) {
-  if (query.Model.children.length) {
-    const adaptor = query.adaptors.find(adaptor => adaptor.name === 'Children');
-    const Model = adaptor.getModelForTable(tableName, discriminator);
-    if (Model) {
-      return Model;
-    }
-  }
   if (tableName === query.Model.tableName) {
     return query.Model;
   }

@@ -16,17 +16,6 @@ class Children extends Adaptor {
     }
   }
 
-  getModelForTable(tableName, discriminator) {
-    for (let Child of this.query.Model.children) {
-      if (Child.tableName === tableName) {
-        return Child;
-      }
-      if (discriminator && Child.modelName === discriminator) {
-        return Child;
-      }
-    }
-  }
-
   getFieldsList(Model = this.query.Model) {
     const baseFields = super.getFieldsList(Model);
 

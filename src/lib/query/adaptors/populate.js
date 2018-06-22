@@ -1,4 +1,4 @@
-const { groupBy, isNil, mapToLookup: toColumns } = require('../../../utils');
+const { groupBy, mapToLookup: toColumns } = require('../../../utils');
 const { getBackRefFields } = require('../../model');
 const { hasNestedFields } = require('../../schema');
 const Adaptor = require('./adaptor');
@@ -62,73 +62,19 @@ class Populate extends Adaptor {
       });
     }
 
-    let linkedIds;
-    if (!this.field.isManyToMany) {
-      const [backRefField] = getBackRefFields(
-        this.query.Model,
-        this.Ref.schema
-      );
-      const linkedDocuments = await this.Ref.find({
-        [backRefField.columnName]: {
-          $in: resultIds
-        }
-      });
-      const groupedRefs = groupBy(linkedDocuments, document => {
-        return document[backRefField.columnName];
-      });
-      return results.map(result => {
-        result[fieldName] = groupedRefs[result.id] || [];
-        return result;
-      });
-    }
-
-    if (this.field.isMulti) {
-      linkedIds = new Set();
-      results.forEach(result => {
-        result[fieldName].forEach(id => {
-          linkedIds.add(id);
-        });
-      });
-    } else {
-      linkedIds = new Set(results.map(result => result[fieldName]));
-    }
-
+    // One to many
+    const [backRefField] = getBackRefFields(this.query.Model, this.Ref.schema);
     const linkedDocuments = await this.Ref.find({
-      id: {
-        $in: Array.from(linkedIds.values())
+      [backRefField.columnName]: {
+        $in: resultIds
       }
     });
-    const linkedIdIndexLookup = linkedDocuments.reduce(
-      (lookup, document, index) => {
-        lookup[document.id] = index;
-        return lookup;
-      },
-      {}
-    );
-
-    if (!this.field.isMulti) {
-      return results.map(document => {
-        const linkedDocumentId = document[fieldName];
-        if (isNil(linkedDocumentId)) {
-          return document;
-        }
-
-        const linkedIndex = linkedIdIndexLookup[linkedDocumentId];
-        const linkedDocument = linkedDocuments[linkedIndex];
-        document[fieldName] = linkedDocument;
-
-        return document;
-      });
-    }
-
-    return results.map(document => {
-      document[fieldName] = document[fieldName].map(linkedDocumentId => {
-        const linkedIndex = linkedIdIndexLookup[linkedDocumentId];
-        const linkedDocument = linkedDocuments[linkedIndex];
-        return isNil(linkedDocument) ? linkedDocumentId : linkedDocument;
-      });
-
-      return document;
+    const groupedRefs = groupBy(linkedDocuments, document => {
+      return document[backRefField.columnName];
+    });
+    return results.map(result => {
+      result[fieldName] = groupedRefs[result.id] || [];
+      return result;
     });
   }
 

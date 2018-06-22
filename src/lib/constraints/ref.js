@@ -41,19 +41,7 @@ class Ref extends Constraint {
 
     this.Ref = getRef(this.field);
 
-    // basic
-    // - one-to-one
-    //    - field is not multi
-    //    - no back ref field
-    // - nested
-    //   - field is multi with no ref
-    //   - back ref field
-    // complicated - create a nested schema for the field
-    // - field is multi with ref
-    // - type is not Model
-    this.isBasic =
-      !this.field.isMulti ||
-      (this.field.isNested && this.field.type instanceof Model);
+    this.isBasic = !this.field.isMulti || this.field.isNested;
     this.isMany = this.field.isMulti && this.field.ref;
   }
 
