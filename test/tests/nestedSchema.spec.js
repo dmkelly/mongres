@@ -4,9 +4,7 @@ const { Mongres, Schema } = require('../../src');
 describe('Nested Schemas', () => {
   let mongres;
   let Point;
-  let PointLight;
   let Line;
-  let LineLight;
   let Shape;
 
   beforeEach(async () => {
@@ -28,20 +26,6 @@ describe('Nested Schemas', () => {
     });
     Point = mongres.model('Point', pointSchema);
 
-    const pointLightSchema = new Schema({
-      line: {
-        type: Schema.Types.Integer(),
-        ref: 'LineLight'
-      },
-      x: {
-        type: Schema.Types.Integer()
-      },
-      y: {
-        type: Schema.Types.Integer()
-      }
-    });
-    PointLight = mongres.model('PointLight', pointLightSchema);
-
     const lineSchema = new Schema({
       shape: {
         type: Schema.Types.Integer(),
@@ -54,14 +38,6 @@ describe('Nested Schemas', () => {
     });
     Line = mongres.model('Line', lineSchema);
 
-    const lineLightSchema = new Schema({
-      points: {
-        type: [PointLight],
-        ref: 'PointLight'
-      }
-    });
-    LineLight = mongres.model('LineLight', lineLightSchema);
-
     const shapeSchema = new Schema({
       lines: {
         type: [Line],
@@ -69,8 +45,6 @@ describe('Nested Schemas', () => {
       }
     });
     Shape = mongres.model('Shape', shapeSchema);
-
-    await mongres.connect(helpers.connectionInfo);
   });
 
   afterEach(() => {
@@ -99,6 +73,10 @@ describe('Nested Schemas', () => {
   });
 
   describe('Model#save()', () => {
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Saves any new subdocuments', async () => {
       const line = new Line({
         points: [
@@ -165,6 +143,35 @@ describe('Nested Schemas', () => {
   });
 
   describe('Model#findOne()', () => {
+    let PointLight;
+    let LineLight;
+
+    beforeEach(async () => {
+      const pointLightSchema = new Schema({
+        line: {
+          type: Schema.Types.Integer(),
+          ref: 'LineLight'
+        },
+        x: {
+          type: Schema.Types.Integer()
+        },
+        y: {
+          type: Schema.Types.Integer()
+        }
+      });
+      PointLight = mongres.model('PointLight', pointLightSchema);
+
+      const lineLightSchema = new Schema({
+        points: {
+          type: [PointLight],
+          ref: 'PointLight'
+        }
+      });
+      LineLight = mongres.model('LineLight', lineLightSchema);
+
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Populates subdocuments on retrieval', async () => {
       const existingLine = new Line({
         points: [
@@ -265,6 +272,8 @@ describe('Nested Schemas', () => {
     let existingLine2;
 
     beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+
       existingLine1 = new Line({
         points: [
           {
@@ -309,6 +318,10 @@ describe('Nested Schemas', () => {
   });
 
   describe('Model#remove()', () => {
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Removes nested subdocuments', async () => {
       const line = new Line({
         points: [

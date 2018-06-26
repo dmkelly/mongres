@@ -1,5 +1,4 @@
 const Constraint = require('./constraint');
-const Model = require('../../model');
 const { getConstraints } = require('../describe');
 const { getRef } = require('../field');
 const { sanitizeName } = require('../../utils');
