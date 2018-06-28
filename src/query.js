@@ -91,8 +91,9 @@ class Query {
 
   where(filters = {}) {
     if (isFunction(filters)) {
+      const client = this.client;
       this.query = this.query.where(function(builder) {
-        filters.call(this, builder, this.client);
+        filters.call(this, builder, client);
       });
       return this;
     }

@@ -36,14 +36,23 @@ class Field {
     this.isNested = this.isMulti && !!definition.attach;
 
     if (this.isMulti) {
-      this.type = definition.type[0];
       this.defaultValue = [];
     } else {
-      this.type = definition.type;
       this.defaultValue = isFunction(definition.default)
         ? definition.default
         : this.type.cast(definition.default);
     }
+  }
+
+  get type() {
+    if (this.isMulti) {
+      const type = this.definition.type[0];
+      if (typeof type === 'string' && this.schema.instance) {
+        return this.schema.instance.model(type);
+      }
+      return type;
+    }
+    return this.definition.type;
   }
 
   cast(value) {

@@ -1,5 +1,12 @@
 const Schema = require('./schema');
-const { cloneDeep, invoke, invokeSeries, isUndefined } = require('./utils');
+const {
+  cloneDeep,
+  getRelationTableName,
+  invoke,
+  invokeSeries,
+  isConflictError,
+  isUndefined
+} = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
 async function invokeMiddleware(document, hook, middleware, isBlocking) {
@@ -102,6 +109,64 @@ class Model {
       }
       return data;
     }, {});
+  }
+
+  async associate(fieldName, document) {
+    const field = this.schema.fields[fieldName];
+    if (!field) {
+      throw await new Error(
+        `Field ${fieldName} does not exist on ${this.Model.modelName}`
+      );
+    }
+    if (!field.isMulti || !field.ref) {
+      throw await new Error(`Field ${fieldName} does not support associations`);
+    }
+
+    const relation = [this.Model, field.type];
+    const tableName = getRelationTableName(relation);
+
+    let foreignId = document instanceof Model ? document.id : document;
+
+    try {
+      await this.instance.client
+        .insert([
+          {
+            [this.Model.tableName]: this.id,
+            [field.type.tableName]: foreignId
+          }
+        ])
+        .into(tableName);
+    } catch (err) {
+      if (isConflictError(err)) {
+        return;
+      }
+      throw err;
+    }
+  }
+
+  async dissociate(fieldName, document) {
+    const field = this.schema.fields[fieldName];
+    if (!field) {
+      throw await new Error(
+        `Field ${fieldName} does not exist on ${this.Model.modelName}`
+      );
+    }
+    if (!field.isMulti || !field.ref) {
+      throw await new Error(`Field ${fieldName} does not support associations`);
+    }
+
+    const relation = [this.Model, field.type];
+    const tableName = getRelationTableName(relation);
+
+    let foreignId = document instanceof Model ? document.id : document;
+
+    await this.instance
+      .client(tableName)
+      .where({
+        [this.Model.tableName]: this.id,
+        [field.type.tableName]: foreignId
+      })
+      .del();
   }
 
   async populate(fieldName) {

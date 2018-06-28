@@ -1,4 +1,9 @@
-const { groupBy, mapToLookup: toColumns } = require('../../../utils');
+const {
+  getRelationTableName,
+  groupBy,
+  keyBy,
+  mapToLookup: toColumns
+} = require('../../../utils');
 const { getBackRefFields } = require('../../model');
 const { hasNestedFields } = require('../../schema');
 const Adaptor = require('./adaptor');
@@ -62,13 +67,45 @@ class Populate extends Adaptor {
       });
     }
 
-    // One to many
     const [backRefField] = getBackRefFields(this.query.Model, this.Ref.schema);
+
+    if (backRefField.isMulti) {
+      // many to many
+      const joinTable = getRelationTableName([this.query.Model, this.Ref]);
+      const linkedDocuments = await this.Ref.find().where((builder, knex) => {
+        const subquery = knex
+          .table(joinTable)
+          .where(this.query.Model.tableName, 'in', resultIds)
+          .select(this.Ref.tableName);
+
+        builder.where('id', 'in', subquery);
+      });
+      const links = await this.query.client
+        .table(joinTable)
+        .where(this.query.Model.tableName, 'in', resultIds);
+
+      const groupedRefs = groupBy(links, record => {
+        return record[this.query.Model.tableName];
+      });
+      const refs = keyBy(linkedDocuments, 'id');
+
+      return results.map(result => {
+        const linkRows = groupedRefs[result.id];
+        if (!linkRows) {
+          return result;
+        }
+        result[fieldName] = linkRows.map(row => refs[row[this.Ref.tableName]]);
+        return result;
+      });
+    }
+
+    // one to many
     const linkedDocuments = await this.Ref.find({
       [backRefField.columnName]: {
         $in: resultIds
       }
     });
+
     const groupedRefs = groupBy(linkedDocuments, document => {
       return document[backRefField.columnName];
     });

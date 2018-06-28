@@ -168,102 +168,218 @@ describe('Nested Schemas', () => {
         }
       });
       LineLight = mongres.model('LineLight', lineLightSchema);
-
-      await mongres.connect(helpers.connectionInfo);
     });
 
-    it('Populates subdocuments on retrieval', async () => {
-      const existingLine = new Line({
-        points: [
-          {
-            x: 1,
-            y: 2
-          },
-          {
-            x: 3,
-            y: 4
-          }
-        ]
-      });
-      await existingLine.save();
-      const line = await Line.findOne({
-        id: existingLine.id
+    describe('Attached subdocuments', () => {
+      beforeEach(async () => {
+        await mongres.connect(helpers.connectionInfo);
       });
 
-      expect(line).to.be.ok;
-      expect(line.points.length).to.equal(2);
-      expect(line.points[0]).to.be.instanceof(Point);
-      expect(line.points[1]).to.be.instanceof(Point);
+      it('Populates subdocuments on retrieval', async () => {
+        const existingLine = new Line({
+          points: [
+            {
+              x: 1,
+              y: 2
+            },
+            {
+              x: 3,
+              y: 4
+            }
+          ]
+        });
+        await existingLine.save();
+        const line = await Line.findOne({
+          id: existingLine.id
+        });
+
+        expect(line).to.be.ok;
+        expect(line.points.length).to.equal(2);
+        expect(line.points[0]).to.be.instanceof(Point);
+        expect(line.points[1]).to.be.instanceof(Point);
+      });
+
+      it('Populates deeply nested subdocuments on retrieval', async () => {
+        const existingShape = new Shape({
+          lines: [
+            {
+              points: [
+                {
+                  x: 1,
+                  y: 2
+                },
+                {
+                  x: 3,
+                  y: 4
+                }
+              ]
+            },
+            {
+              points: [
+                {
+                  x: 5,
+                  y: 6
+                },
+                {
+                  x: 7,
+                  y: 8
+                }
+              ]
+            }
+          ]
+        });
+        await existingShape.save();
+        const shape = await Shape.findOne({
+          id: existingShape.id
+        });
+
+        expect(shape).to.be.ok;
+        expect(shape).to.be.instanceof(Shape);
+        expect(shape.lines.length).to.equal(2);
+        expect(shape.lines[0]).to.be.instanceof(Line);
+        expect(shape.lines[1]).to.be.instanceof(Line);
+        expect(shape.lines[0].points.length).to.equal(2);
+        expect(shape.lines[0].points[0]).to.be.instanceof(Point);
+        expect(shape.lines[0].points[1]).to.be.instanceof(Point);
+        expect(shape.lines[1].points[0]).to.be.instanceof(Point);
+        expect(shape.lines[1].points[1]).to.be.instanceof(Point);
+      });
     });
 
-    it('Populates ref lists with #populate()', async () => {
-      const existingLine = await LineLight.create({
-        name: 'test'
-      });
-      const point1 = await PointLight.create({
-        line: existingLine.id,
-        x: 1,
-        y: 2
-      });
-      const point2 = await PointLight.create({
-        line: existingLine.id,
-        x: 3,
-        y: 4
+    describe('One to many', () => {
+      beforeEach(async () => {
+        await mongres.connect(helpers.connectionInfo);
       });
 
-      const [line] = await LineLight.find(existingLine.id).populate('points');
+      it('Populates ref lists with #populate()', async () => {
+        const existingLine = await LineLight.create({
+          name: 'test'
+        });
+        const point1 = await PointLight.create({
+          line: existingLine.id,
+          x: 1,
+          y: 2
+        });
+        const point2 = await PointLight.create({
+          line: existingLine.id,
+          x: 3,
+          y: 4
+        });
 
-      expect(line).to.be.ok;
-      expect(line.points[0]).to.be.instanceof(PointLight);
-      expect(line.points[1]).to.be.instanceof(PointLight);
-      expect(line.points.find(point => point.id === point1.id)).to.be.ok;
-      expect(line.points.find(point => point.id === point2.id)).to.be.ok;
+        const [line] = await LineLight.find({
+          id: existingLine.id
+        }).populate('points');
+
+        expect(line).to.be.ok;
+        expect(line.points[0]).to.be.instanceof(PointLight);
+        expect(line.points[1]).to.be.instanceof(PointLight);
+        expect(line.points.find(point => point.id === point1.id)).to.be.ok;
+        expect(line.points.find(point => point.id === point2.id)).to.be.ok;
+      });
     });
 
-    it('Populates deeply nested subdocuments on retrieval', async () => {
-      const existingShape = new Shape({
-        lines: [
-          {
-            points: [
-              {
-                x: 1,
-                y: 2
-              },
-              {
-                x: 3,
-                y: 4
-              }
-            ]
-          },
-          {
-            points: [
-              {
-                x: 5,
-                y: 6
-              },
-              {
-                x: 7,
-                y: 8
-              }
-            ]
-          }
-        ]
-      });
-      await existingShape.save();
-      const shape = await Shape.findOne({
-        id: existingShape.id
+    describe('Many to many', () => {
+      let Widget;
+      let Kit;
+      let kit1;
+      let kit2;
+      let widget1;
+      let widget2;
+
+      beforeEach(async () => {
+        Kit = mongres.model(
+          'Kit',
+          new Schema({
+            size: {
+              type: Schema.Types.Integer()
+            },
+            widgets: {
+              type: ['Widget'],
+              ref: 'Widget'
+            }
+          })
+        );
+
+        Widget = mongres.model(
+          'Widget',
+          new Schema({
+            weight: {
+              type: Schema.Types.Integer()
+            },
+            kits: {
+              type: [Kit],
+              ref: 'Kit'
+            }
+          })
+        );
+
+        await mongres.connect(helpers.connectionInfo);
+
+        kit1 = await Kit.create({
+          size: 1
+        });
+        kit2 = await Kit.create({
+          size: 2
+        });
+        await Kit.create({
+          size: 3
+        });
+        widget1 = await Widget.create({
+          weight: 1
+        });
+        widget2 = await Widget.create({
+          weight: 2
+        });
+        await Widget.create({
+          weight: 3
+        });
+
+        await widget1.associate('kits', kit1);
+        await widget2.associate('kits', kit1);
+        await widget2.associate('kits', kit2);
       });
 
-      expect(shape).to.be.ok;
-      expect(shape).to.be.instanceof(Shape);
-      expect(shape.lines.length).to.equal(2);
-      expect(shape.lines[0]).to.be.instanceof(Line);
-      expect(shape.lines[1]).to.be.instanceof(Line);
-      expect(shape.lines[0].points.length).to.equal(2);
-      expect(shape.lines[0].points[0]).to.be.instanceof(Point);
-      expect(shape.lines[0].points[1]).to.be.instanceof(Point);
-      expect(shape.lines[1].points[0]).to.be.instanceof(Point);
-      expect(shape.lines[1].points[1]).to.be.instanceof(Point);
+      it('Safely handles preexisting associations', async () => {
+        await widget1.associate('kits', kit1);
+      });
+
+      it('Does not attach refs by default', async () => {
+        const kit = await Kit.findById(kit1.id);
+        const widget = await Widget.findById(widget2.id);
+        expect(kit.widgets).to.deep.equal([]);
+        expect(widget.kits).to.deep.equal([]);
+      });
+
+      it('Attaches refs with #populate()', async () => {
+        const [kit] = await Kit.find({
+          id: kit1.id
+        }).populate('widgets');
+        const [widget] = await Widget.find({
+          id: widget2.id
+        }).populate('kits');
+
+        expect(kit.widgets).to.be.ok;
+        expect(kit.widgets.length).to.equal(2);
+        expect(kit.widgets[0]).to.be.instanceof(Widget);
+        expect(kit.widgets[1]).to.be.instanceof(Widget);
+        expect(widget.kits).to.be.ok;
+        expect(widget.kits.length).to.equal(2);
+        expect(widget.kits[0]).to.be.instanceof(Kit);
+        expect(widget.kits[1]).to.be.instanceof(Kit);
+      });
+
+      describe('#dissociate()', () => {
+        it('Removes a relationship between documents', async () => {
+          await kit1.dissociate('widgets', widget2);
+
+          const [kit] = await Kit.find({
+            id: kit1.id
+          }).populate('widgets');
+
+          expect(kit.widgets.length).to.equal(1);
+          expect(kit.widgets[0].id).not.to.equal(widget2.id);
+        });
+      });
     });
   });
 
