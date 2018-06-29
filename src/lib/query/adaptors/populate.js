@@ -72,17 +72,19 @@ class Populate extends Adaptor {
     if (backRefField.isMulti) {
       // many to many
       const joinTable = getRelationTableName([this.query.Model, this.Ref]);
-      const linkedDocuments = await this.Ref.find().where((builder, knex) => {
-        const subquery = knex
+      const [linkedDocuments, links] = await Promise.all([
+        this.Ref.find().where((builder, knex) => {
+          const subquery = knex
+            .table(joinTable)
+            .where(this.query.Model.tableName, 'in', resultIds)
+            .select(this.Ref.tableName);
+
+          builder.where('id', 'in', subquery);
+        }),
+        this.query.client
           .table(joinTable)
           .where(this.query.Model.tableName, 'in', resultIds)
-          .select(this.Ref.tableName);
-
-        builder.where('id', 'in', subquery);
-      });
-      const links = await this.query.client
-        .table(joinTable)
-        .where(this.query.Model.tableName, 'in', resultIds);
+      ]);
 
       const groupedRefs = groupBy(links, record => {
         return record[this.query.Model.tableName];
