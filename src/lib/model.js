@@ -23,7 +23,7 @@ function serialize(document, schema) {
       }
     }
 
-    if (field.isNested) {
+    if (field.isMulti) {
       return data;
     }
 

@@ -3,26 +3,13 @@ const { error, Mongres, Schema } = require('../../../src');
 
 describe('model/classFunctions', () => {
   let mongres;
-  let Square;
   let Widget;
-  let Gadget;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
-    Square = mongres.model(
-      'Square',
-      new Schema({
-        height: {
-          type: Schema.Types.Integer()
-        },
-        width: {
-          required: true,
-          type: Schema.Types.Integer()
-        }
-      })
-    );
+
     Widget = mongres.model(
       'Widget',
       new Schema({
@@ -31,16 +18,6 @@ describe('model/classFunctions', () => {
         }
       })
     );
-    Gadget = Widget.discriminator(
-      'Gadget',
-      new Schema({
-        weight: {
-          type: Schema.Types.Integer()
-        }
-      })
-    );
-
-    await mongres.connect(helpers.connectionInfo);
   });
 
   afterEach(() => {
@@ -48,6 +25,25 @@ describe('model/classFunctions', () => {
   });
 
   describe('#create()', () => {
+    let Square;
+
+    beforeEach(async () => {
+      Square = mongres.model(
+        'Square',
+        new Schema({
+          height: {
+            type: Schema.Types.Integer()
+          },
+          width: {
+            required: true,
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Inserts a new record', async () => {
       await Widget.create({
         height: 7
@@ -96,6 +92,20 @@ describe('model/classFunctions', () => {
   });
 
   describe('#discriminator()', () => {
+    let Gadget;
+
+    beforeEach(async () => {
+      Gadget = Widget.discriminator(
+        'Gadget',
+        new Schema({
+          weight: {
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Creates a subclass of the parent', () => {
       const gadget = new Gadget();
       expect(gadget).to.be.instanceof(Gadget);
@@ -104,8 +114,9 @@ describe('model/classFunctions', () => {
   });
 
   describe('#find()', () => {
-    beforeEach(() => {
-      return Promise.all([
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+      await Promise.all([
         new Widget({
           height: 5
         }).save(),
@@ -155,8 +166,9 @@ describe('model/classFunctions', () => {
   });
 
   describe('#findOne()', () => {
-    beforeEach(() => {
-      return Promise.all([
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+      await Promise.all([
         new Widget({
           height: 5
         }).save(),
@@ -207,6 +219,7 @@ describe('model/classFunctions', () => {
     let widgetB;
 
     beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
       widgetA = await new Widget({
         height: 5
       }).save();
@@ -237,8 +250,9 @@ describe('model/classFunctions', () => {
   });
 
   describe('#remove()', () => {
-    beforeEach(() => {
-      return Promise.all([
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+      await Promise.all([
         new Widget({
           height: 5
         }).save(),

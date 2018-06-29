@@ -1,49 +1,36 @@
 const {
+  adaptors,
   ensureColumnNamespace,
   getFieldsList,
   getWhereBuilder,
   normalizeSortArgs,
-  toColumns,
   toModel
 } = require('./lib/query');
-const { getBackRefFields } = require('./lib/model');
-const { isFunction, pick } = require('./utils');
-
-class Join {
-  constructor({ fieldName, Model }) {
-    this.fieldName = fieldName;
-    this.Model = Model;
-  }
-}
+const { isFunction, mapToLookup: toColumns, pick } = require('./utils');
 
 class Query {
   constructor(Model, options = {}) {
     this.Model = Model;
     this.options = options;
     this.client = this.Model.instance.client;
-    this.query = this.client
-      .table(this.Model.tableName)
-      .select()
-      .column(toColumns(getFieldsList(this.Model)));
-    this.joins = {};
 
+    this.query = this.client.table(this.Model.tableName);
+    this.query = this.query.select();
+
+    this.adaptors = [];
     if (this.Model.children.length) {
-      for (let Child of this.Model.children) {
-        this.query = this.query.leftJoin(
-          Child.tableName,
-          `${this.Model.tableName}.id`,
-          `${Child.tableName}.id`
-        );
-      }
+      this.adaptors.push(new adaptors.Children(this));
     }
-
     if (this.Model.Parent) {
-      this.query = this.query.join(
-        this.Model.Parent.tableName,
-        `${this.Model.tableName}.id`,
-        `${this.Model.Parent.tableName}.id`
-      );
+      this.adaptors.push(new adaptors.Parent(this));
     }
+    Object.values(this.Model.schema.fields).forEach(field => {
+      if (field.isNested) {
+        this.adaptors.push(new adaptors.Nested(this, field));
+      }
+    });
+
+    this.query = this.query.column(toColumns(getFieldsList(this)));
 
     if (this.options.single) {
       this.query = this.query.limit(1);
@@ -77,17 +64,9 @@ class Query {
       return this;
     }
 
-    this.query = this.query
-      .leftJoin(
-        Ref.tableName,
-        `${this.Model.tableName}.${fieldName}`,
-        `${Ref.tableName}.id`
-      )
-      .column(toColumns(getFieldsList(Ref)));
-    this.joins[Ref.tableName] = new Join({
-      fieldName,
-      Model: Ref
-    });
+    if (!adaptors.Populate.exists(this, Ref, field)) {
+      this.adaptors.push(new adaptors.Populate(this, Ref, field));
+    }
 
     return this;
   }
@@ -112,8 +91,9 @@ class Query {
 
   where(filters = {}) {
     if (isFunction(filters)) {
+      const client = this.client;
       this.query = this.query.where(function(builder) {
-        filters.call(this, builder, this.client);
+        filters.call(this, builder, client);
       });
       return this;
     }
@@ -124,7 +104,7 @@ class Query {
     this.query = Object.entries(filters).reduce(
       (query, [fieldName, filter]) => {
         const field = schema.fields[fieldName];
-        const columnName = ensureColumnNamespace(field, this.Model);
+        const columnName = ensureColumnNamespace(this, field);
         return query.where(getWhereBuilder(this, columnName, filter));
       },
       this.query
@@ -135,50 +115,12 @@ class Query {
 
   then(callback) {
     return this.query
+      .then(records => records.map(record => toModel(record, this)))
       .then(async results => {
-        const nestedFields = Object.values(this.Model.schema.fields).filter(
-          field => field.isNested
-        );
-
-        if (!nestedFields.length) {
-          return results.map(record => toModel(record, this));
+        for (let adaptor of this.adaptors) {
+          results = await adaptor.reconcile(results);
         }
-
-        const idField = `${this.Model.tableName}.id`;
-        const nestedResults = await Promise.all(
-          nestedFields.map(field => {
-            const backRefField = getBackRefFields(
-              this.Model,
-              field.type.schema
-            )[0];
-
-            return new Query(field.type).where({
-              [backRefField.fieldName]: {
-                $in: results.map(item => item[idField])
-              }
-            });
-          })
-        );
-
-        return results.map(record => {
-          for (let i = 0; i < nestedFields.length; i += 1) {
-            const field = nestedFields[i];
-            const backRefField = getBackRefFields(
-              this.Model,
-              field.type.schema
-            )[0];
-            const results = nestedResults[i].filter(item => {
-              return item[backRefField.fieldName] === record[idField];
-            });
-
-            // Namespace with table name so `toModel` knows how to convert the
-            // record data to the model
-            const attachKey = `${this.Model.tableName}.${field.fieldName}`;
-            record[attachKey] = results;
-          }
-
-          return toModel(record, this);
-        });
+        return results;
       })
       .then(records => {
         if (!this.options.single) {

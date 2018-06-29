@@ -2,7 +2,7 @@ const _ = require('lodash');
 const error = require('./error');
 
 function castError(err) {
-  if (err.code === '23505') {
+  if (isConflictError(err)) {
     return new error.ConflictError(err);
   }
   return err;
@@ -10,6 +10,13 @@ function castError(err) {
 
 function escapeRegExp(text) {
   return text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function getRelationTableName(relation) {
+  const [ModelA, ModelB] = relation;
+  const tableNames = [ModelA.tableName, ModelB.tableName];
+  tableNames.sort();
+  return tableNames.join('_');
 }
 
 function invoke(fns) {
@@ -22,6 +29,18 @@ async function invokeSeries(fns) {
   for (let fn of fns) {
     await fn();
   }
+}
+
+function isConflictError(err) {
+  return err.code === '23505';
+}
+
+function mapToLookup(array) {
+  return array.map(field => {
+    const obj = {};
+    obj[field] = field;
+    return obj;
+  });
 }
 
 function sanitizeName(name) {
@@ -42,8 +61,11 @@ module.exports = {
   castError,
   cloneDeep: _.cloneDeep,
   escapeRegExp,
+  getRelationTableName,
+  groupBy: _.groupBy,
   invoke,
   invokeSeries,
+  isConflictError,
   isDate: _.isDate,
   isFunction: _.isFunction,
   isNil: _.isNil,
@@ -51,6 +73,8 @@ module.exports = {
   isObject: _.isObject,
   isString: _.isString,
   isUndefined: _.isUndefined,
+  keyBy: _.keyBy,
+  mapToLookup,
   pick: _.pick,
   sanitizeName,
   setIn: _.set,

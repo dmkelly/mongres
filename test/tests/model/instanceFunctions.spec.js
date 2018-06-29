@@ -4,82 +4,11 @@ const { Mongres, Schema, error } = require('../../../src');
 
 describe('model/instanceFunctions', () => {
   let mongres;
-  let Square;
-  let Widget;
-  let Point;
-  let Line;
-  let preRemoveMiddleware;
-  let postRemoveMiddleware;
-  let preSaveMiddleware;
-  let postSaveMiddleware;
-  let preValidateMiddleware;
-  let postValidateMiddleware;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     mongres = new Mongres();
-    preRemoveMiddleware = sinon.spy();
-    postRemoveMiddleware = sinon.spy();
-    preSaveMiddleware = sinon.spy();
-    postSaveMiddleware = sinon.spy();
-    preValidateMiddleware = sinon.spy();
-    postValidateMiddleware = sinon.spy();
-
-    const widgetSchema = new Schema({
-      height: {
-        type: Schema.Types.Integer()
-      }
-    });
-
-    const squareSchema = new Schema({
-      height: {
-        enum: [5, 10],
-        type: Schema.Types.Integer()
-      },
-      width: {
-        validate: {
-          message: 'invalid width: {VALUE}',
-          validator: value => value > 0
-        },
-        required: true,
-        type: Schema.Types.Integer()
-      }
-    });
-
-    const pointSchema = new Schema({
-      x: {
-        type: Schema.Types.Integer()
-      },
-      y: {
-        type: Schema.Types.Integer()
-      }
-    });
-
-    const lineSchema = new Schema({
-      start: {
-        type: Schema.Types.Integer(),
-        ref: 'Point'
-      },
-      end: {
-        type: Schema.Types.Integer(),
-        ref: 'Point'
-      }
-    });
-
-    widgetSchema.pre('remove', preRemoveMiddleware);
-    widgetSchema.post('remove', postRemoveMiddleware);
-    widgetSchema.pre('save', preSaveMiddleware);
-    widgetSchema.post('save', postSaveMiddleware);
-    widgetSchema.pre('validate', preValidateMiddleware);
-    widgetSchema.post('validate', postValidateMiddleware);
-
-    Square = mongres.model('Square', squareSchema);
-    Widget = mongres.model('Widget', widgetSchema);
-    Point = mongres.model('Point', pointSchema);
-    Line = mongres.model('Line', lineSchema);
-
-    await mongres.connect(helpers.connectionInfo);
   });
 
   afterEach(() => {
@@ -87,9 +16,24 @@ describe('model/instanceFunctions', () => {
   });
 
   describe('#isModified()', () => {
+    let Point;
     let existingPoint;
 
     beforeEach(async () => {
+      Point = mongres.model(
+        'Point',
+        new Schema({
+          x: {
+            type: Schema.Types.Integer()
+          },
+          y: {
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+
+      await mongres.connect(helpers.connectionInfo);
+
       existingPoint = await Point.create({
         x: 1,
         y: 2
@@ -127,61 +71,217 @@ describe('model/instanceFunctions', () => {
   });
 
   describe('#populate()', () => {
-    let start;
-    let end;
-    let line;
+    describe('Basic scenarios', () => {
+      let Point;
+      let Line;
+      let start;
+      let end;
+      let line;
 
-    beforeEach(async () => {
-      start = new Point({
-        x: 1,
-        y: 2
+      beforeEach(async () => {
+        Point = mongres.model(
+          'Point',
+          new Schema({
+            x: {
+              type: Schema.Types.Integer()
+            },
+            y: {
+              type: Schema.Types.Integer()
+            }
+          })
+        );
+
+        Line = mongres.model(
+          'Line',
+          new Schema({
+            start: {
+              type: Schema.Types.Integer(),
+              ref: 'Point'
+            },
+            end: {
+              type: Schema.Types.Integer(),
+              ref: 'Point'
+            }
+          })
+        );
+
+        await mongres.connect(helpers.connectionInfo);
+
+        start = new Point({
+          x: 1,
+          y: 2
+        });
+        end = new Point({
+          x: 3,
+          y: 4
+        });
+        await start.save();
+        await end.save();
+        line = new Line({
+          start: start.id,
+          end: end.id
+        });
+        await line.save();
       });
-      end = new Point({
-        x: 3,
-        y: 4
+
+      it('Attaches the referenced record to the document', async () => {
+        expect(line.start).to.equal(start.id);
+        await line.populate('start');
+        expect(line.start).to.be.instanceof(Point);
+        expect(line.start.toObject()).to.deep.equal(start.toObject());
       });
-      await start.save();
-      await end.save();
-      line = new Line({
-        start: start.id,
-        end: end.id
+
+      it('Handles populated fields when it saves', async () => {
+        await line.populate('start');
+        line.end = 6;
+        await expect(line.save()).not.to.be.rejectedWith(error.ValidationError);
       });
-      await line.save();
+
+      it('Handles populated fields when it validates', async () => {
+        await line.populate('start');
+        line.end = 6;
+        await expect(line.validate()).not.to.be.rejectedWith(
+          error.ValidationError
+        );
+      });
+
+      it('Handles when the populated document does not exist', async () => {
+        line.start = 1000;
+        await line.populate('start');
+        expect(line.start).to.equal(1000);
+      });
     });
 
-    it('Attaches the referenced record to the document', async () => {
-      expect(line.start).to.equal(start.id);
-      await line.populate('start');
-      expect(line.start).to.be.instanceof(Point);
-      expect(line.start.toObject()).to.deep.equal(start.toObject());
-    });
+    describe('Complicated scenarios', () => {
+      let NestedPoint;
+      let Gadget;
+      let Device;
+      let device1;
+      let gadget1;
+      let device2;
+      let gadget2;
 
-    it('Handles populated fields when it saves', async () => {
-      await line.populate('start');
-      line.end = 6;
-      await expect(line.save()).not.to.be.rejectedWith(error.ValidationError);
-    });
+      beforeEach(async () => {
+        NestedPoint = mongres.model(
+          'NestedPoint',
+          new Schema({
+            gadget: {
+              type: Schema.Types.Integer(),
+              ref: 'Gadget'
+            },
+            x: {
+              type: Schema.Types.Integer()
+            },
+            y: {
+              type: Schema.Types.Integer()
+            }
+          })
+        );
 
-    it('Handles populated fields when it validates', async () => {
-      await line.populate('start');
-      line.end = 6;
-      await expect(line.validate()).not.to.be.rejectedWith(
-        error.ValidationError
-      );
-    });
+        Gadget = mongres.model(
+          'Gadget',
+          new Schema({
+            points: {
+              type: [NestedPoint],
+              attach: true
+            },
+            size: {
+              type: Schema.Types.Integer()
+            }
+          })
+        );
 
-    it('Handles when the populated document does not exist', async () => {
-      line.start = 1000;
-      await line.populate('start');
-      expect(line.start).to.equal(1000);
+        Device = mongres.model(
+          'Device',
+          new Schema({
+            name: {
+              type: Schema.Types.String()
+            },
+            gadget: {
+              type: Schema.Types.Integer(),
+              ref: 'Gadget'
+            }
+          })
+        );
+
+        await mongres.connect(helpers.connectionInfo);
+
+        gadget1 = await Gadget.create({
+          points: [
+            {
+              x: 1,
+              y: 2
+            },
+            {
+              x: 3,
+              y: 4
+            }
+          ],
+          size: 2
+        });
+
+        gadget2 = await Gadget.create({
+          points: [
+            {
+              x: 5,
+              y: 6
+            },
+            {
+              x: 7,
+              y: 8
+            }
+          ],
+          size: 2
+        });
+
+        device1 = await Device.create({
+          name: 'a',
+          gadget: gadget1.id
+        });
+
+        device2 = await Device.create({
+          name: 'b',
+          gadget: gadget2.id
+        });
+      });
+
+      it('Handles nested documents on the populated field', async () => {
+        const [a, b] = await Device.find()
+          .populate('gadget')
+          .sort('name', 1);
+        expect(a.id).to.equal(device1.id);
+        expect(b.id).to.equal(device2.id);
+        expect(a.gadget).to.be.instanceof(Gadget);
+        expect(a.gadget.points.length).to.equal(2);
+        expect(a.gadget.points[0]).to.be.instanceof(NestedPoint);
+        expect(a.gadget.points[1]).to.be.instanceof(NestedPoint);
+      });
     });
   });
 
   describe('#remove()', () => {
+    let Widget;
     let widgetA;
     let widgetB;
+    let preRemoveMiddleware;
+    let postRemoveMiddleware;
 
     beforeEach(async () => {
+      preRemoveMiddleware = sinon.spy();
+      postRemoveMiddleware = sinon.spy();
+      const widgetSchema = new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        }
+      });
+
+      widgetSchema.pre('remove', preRemoveMiddleware);
+      widgetSchema.post('remove', postRemoveMiddleware);
+
+      Widget = mongres.model('Widget', widgetSchema);
+
+      await mongres.connect(helpers.connectionInfo);
+
       widgetA = new Widget({
         height: 5
       });
@@ -221,6 +321,47 @@ describe('model/instanceFunctions', () => {
   });
 
   describe('#save()', () => {
+    let Square;
+    let Widget;
+    let preSaveMiddleware;
+    let postSaveMiddleware;
+
+    beforeEach(async () => {
+      preSaveMiddleware = sinon.spy();
+      postSaveMiddleware = sinon.spy();
+
+      Square = mongres.model(
+        'Square',
+        new Schema({
+          height: {
+            enum: [5, 10],
+            type: Schema.Types.Integer()
+          },
+          width: {
+            validate: {
+              message: 'invalid width: {VALUE}',
+              validator: value => value > 0
+            },
+            required: true,
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+
+      const widgetSchema = new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        }
+      });
+
+      widgetSchema.pre('save', preSaveMiddleware);
+      widgetSchema.post('save', postSaveMiddleware);
+
+      Widget = mongres.model('Widget', widgetSchema);
+
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Inserts new records', async () => {
       const widget = new Widget({
         height: 5
@@ -305,6 +446,58 @@ describe('model/instanceFunctions', () => {
   });
 
   describe('#toObject()', () => {
+    let Square;
+    let Point;
+    let Line;
+
+    beforeEach(async () => {
+      Point = mongres.model(
+        'Point',
+        new Schema({
+          x: {
+            type: Schema.Types.Integer()
+          },
+          y: {
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+
+      Line = mongres.model(
+        'Line',
+        new Schema({
+          start: {
+            type: Schema.Types.Integer(),
+            ref: 'Point'
+          },
+          end: {
+            type: Schema.Types.Integer(),
+            ref: 'Point'
+          }
+        })
+      );
+
+      Square = mongres.model(
+        'Square',
+        new Schema({
+          height: {
+            enum: [5, 10],
+            type: Schema.Types.Integer()
+          },
+          width: {
+            validate: {
+              message: 'invalid width: {VALUE}',
+              validator: value => value > 0
+            },
+            required: true,
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Represents the model data as a plain object', () => {
       const square = new Square({
         height: 5,
@@ -359,6 +552,47 @@ describe('model/instanceFunctions', () => {
   });
 
   describe('#validate()', () => {
+    let Square;
+    let Widget;
+    let preValidateMiddleware;
+    let postValidateMiddleware;
+
+    beforeEach(async () => {
+      preValidateMiddleware = sinon.spy();
+      postValidateMiddleware = sinon.spy();
+
+      Square = mongres.model(
+        'Square',
+        new Schema({
+          height: {
+            enum: [5, 10],
+            type: Schema.Types.Integer()
+          },
+          width: {
+            validate: {
+              message: 'invalid width: {VALUE}',
+              validator: value => value > 0
+            },
+            required: true,
+            type: Schema.Types.Integer()
+          }
+        })
+      );
+
+      const widgetSchema = new Schema({
+        height: {
+          type: Schema.Types.Integer()
+        }
+      });
+
+      widgetSchema.pre('validate', preValidateMiddleware);
+      widgetSchema.post('validate', postValidateMiddleware);
+
+      Widget = mongres.model('Widget', widgetSchema);
+
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Enforces required fields', () => {
       const square = new Square({
         height: 5
