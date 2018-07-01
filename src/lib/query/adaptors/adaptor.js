@@ -37,7 +37,7 @@ class Adaptor {
     if (!data) {
       return document;
     }
-    Object.assign(document, data);
+    Object.assign(document.data, data);
     return document;
   }
 }

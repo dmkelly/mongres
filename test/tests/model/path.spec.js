@@ -87,5 +87,14 @@ describe('model/path', () => {
       const records = await helpers.query.find(Model.tableName);
       expect(records[0].testValue).to.equal(9);
     });
+
+    it('Does not apply the setter on retrieval from database', async () => {
+      const document = new Model({
+        testValue: 5
+      });
+      await document.save();
+      const retrieved = await Model.findById(document.id);
+      expect(retrieved.testValue).to.equal(6);
+    });
   });
 });
