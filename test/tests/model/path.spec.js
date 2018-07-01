@@ -46,6 +46,13 @@ describe('model/path', () => {
       const records = await helpers.query.find(Model.tableName);
       expect(records[0].testValue).to.equal(5);
     });
+
+    it('Applies the custom getter for the field in #toObject()', () => {
+      const document = new Model({
+        testValue: 5
+      });
+      expect(document.toObject().testValue).to.equal(6);
+    });
   });
 
   describe('#set()', () => {
@@ -95,6 +102,68 @@ describe('model/path', () => {
       await document.save();
       const retrieved = await Model.findById(document.id);
       expect(retrieved.testValue).to.equal(6);
+    });
+
+    it('Applies setters correctly on #create()', async () => {
+      const document = await Model.create({
+        testValue: 5
+      });
+      const retrieved = await Model.findById(document.id);
+      expect(retrieved.testValue).to.equal(6);
+    });
+  });
+
+  describe('Chaining', () => {
+    let Model;
+
+    beforeEach(async () => {
+      schema
+        .path('testValue')
+        .set(function(value) {
+          return value + 1;
+        })
+        .get(function(value) {
+          return value - 1;
+        });
+      Model = mongres.model('Test', schema);
+      await mongres.connect(helpers.connectionInfo);
+    });
+
+    afterEach(() => {
+      return mongres.disconnect();
+    });
+
+    it('Allows chaining of setters and getters', () => {
+      const document = new Model({
+        testValue: 5
+      });
+      expect(document.testValue).to.equal(5);
+    });
+  });
+
+  describe('Separate applications', () => {
+    let Model;
+
+    beforeEach(async () => {
+      schema.path('testValue').set(function(value) {
+        return value + 1;
+      });
+      schema.path('testValue').get(function(value) {
+        return value - 1;
+      });
+      Model = mongres.model('Test', schema);
+      await mongres.connect(helpers.connectionInfo);
+    });
+
+    afterEach(() => {
+      return mongres.disconnect();
+    });
+
+    it('Allows application of both getters and setters separately', () => {
+      const document = new Model({
+        testValue: 5
+      });
+      expect(document.testValue).to.equal(5);
     });
   });
 });

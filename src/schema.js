@@ -90,6 +90,16 @@ class Schema {
   }
 
   path(fieldName) {
+    if (!this.fields[fieldName]) {
+      throw new Error(
+        `Unable to modify path ${fieldName} does not exist on schema`
+      );
+    }
+
+    const existingModifier = this.modifiers.get(fieldName);
+    if (existingModifier) {
+      return existingModifier;
+    }
     const modifier = new Modifier(fieldName);
     this.modifiers.set(fieldName, modifier);
     return modifier;
