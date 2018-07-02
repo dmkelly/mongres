@@ -175,7 +175,6 @@ function modelFactory(instance, name, schema, BaseModel = Model) {
       // set the data directly on document through getters/setters
       this.data = {};
       Object.assign(this, defaults, this.schema.cast(data));
-      this.originalData = cloneDeep(this.data);
     }
   }
 

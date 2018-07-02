@@ -9,12 +9,14 @@ describe('model/discriminator/instanceFunctions', () => {
   let Point;
   let preRemoveMiddleware;
   let postRemoveMiddleware;
+  let preSaveMiddleware;
 
   beforeEach(async () => {
     await helpers.table.dropTables();
 
     preRemoveMiddleware = sinon.spy();
     postRemoveMiddleware = sinon.spy();
+    preSaveMiddleware = sinon.spy();
 
     mongres = new Mongres();
 
@@ -54,6 +56,7 @@ describe('model/discriminator/instanceFunctions', () => {
       }
     });
 
+    shapeSchema.pre('save', preSaveMiddleware);
     rectangleSchema.pre('remove', preRemoveMiddleware);
     rectangleSchema.post('remove', postRemoveMiddleware);
 
@@ -150,6 +153,24 @@ describe('model/discriminator/instanceFunctions', () => {
       expect(postRemoveMiddleware.called).not.to.be.ok;
       await rectangle.remove();
       expect(postRemoveMiddleware.called).to.be.ok;
+    });
+  });
+
+  describe('#save()', () => {
+    let rectangle;
+
+    beforeEach(() => {
+      rectangle = new Rectangle({
+        height: 3,
+        width: 4,
+        area: 12
+      });
+    });
+
+    it('Calls the pre-save middleware of the parent on save', async () => {
+      await rectangle.save();
+      expect(preSaveMiddleware.called).to.be.ok;
+      expect(preSaveMiddleware.getCalls().length).to.equal(1);
     });
   });
 });

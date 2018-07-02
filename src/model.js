@@ -39,8 +39,18 @@ async function saveNestedFields(transaction, document) {
 async function upsert(transaction, document) {
   if (document.Parent) {
     const parentDocument = new document.Parent(document.toObject());
-    parentDocument.isNew = document.isNew;
-    await parentDocument.save({ transaction });
+
+    if (document.isNew) {
+      parentDocument.isNew = true;
+    } else {
+      parentDocument.isNew = false;
+      parentDocument.originalData = document.Parent.schema.cast(document.data);
+    }
+
+    await parentDocument.save({
+      transaction,
+      skipMiddleware: true
+    });
     document[document.Parent.tableName] = parentDocument.id;
     document.id = parentDocument.id;
   }
@@ -72,15 +82,13 @@ class Model {
     this.isNew = true;
     this.schema = defaultSchema;
     this.subSchema = defaultSchema;
+    this.originalData = {};
   }
 
   isModified(fieldName) {
     const field = this.schema.fields[fieldName];
     if (!field) {
       return false;
-    }
-    if (this.isNew) {
-      return true;
     }
 
     const originalValue = this.originalData[fieldName];
@@ -187,14 +195,18 @@ class Model {
     return this;
   }
 
-  async remove({ transaction } = {}) {
+  async remove({ transaction, skipMiddleware } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'remove';
 
-    await invokeMiddleware(this, hook, pre, true);
+    if (!skipMiddleware) {
+      await invokeMiddleware(this, hook, pre, true);
+    }
 
     if (this.isNew && isUndefined(this.id)) {
-      invokeMiddleware(this, hook, post, false);
+      if (!skipMiddleware) {
+        invokeMiddleware(this, hook, post, false);
+      }
       return await null;
     }
 
@@ -205,17 +217,21 @@ class Model {
       { transaction }
     );
 
-    invokeMiddleware(this, hook, post, false);
+    if (!skipMiddleware) {
+      invokeMiddleware(this, hook, post, false);
+    }
 
     return null;
   }
 
-  async save({ transaction } = {}) {
+  async save({ transaction, skipMiddleware } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'save';
 
-    await this.validate();
-    await invokeMiddleware(this, hook, pre, true);
+    await this.validate({ skipMiddleware });
+    if (!skipMiddleware) {
+      await invokeMiddleware(this, hook, pre, true);
+    }
 
     const client = this.instance.client;
 
@@ -231,18 +247,26 @@ class Model {
 
     this.originalData = cloneDeep(this.data);
 
-    invokeMiddleware(this, hook, post, false);
+    if (!skipMiddleware) {
+      invokeMiddleware(this, hook, post, false);
+    }
 
     return this;
   }
 
-  async validate() {
+  async validate({ skipMiddleware } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'validate';
 
-    await invokeMiddleware(this, hook, pre, true);
+    if (!skipMiddleware) {
+      await invokeMiddleware(this, hook, pre, true);
+    }
+
     this.schema.validate(this);
-    invokeMiddleware(this, hook, post, false);
+
+    if (!skipMiddleware) {
+      invokeMiddleware(this, hook, post, false);
+    }
   }
 }
 
