@@ -12,6 +12,7 @@ class Field {
     this.ref = definition.ref;
     if (this.ref) {
       this.refTableName = sanitizeName(this.ref);
+      this.cascade = !!definition.cascade;
     }
 
     this.enum = definition.enum

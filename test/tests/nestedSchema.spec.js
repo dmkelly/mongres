@@ -497,4 +497,51 @@ describe('Nested Schemas', () => {
       expect(savedPoints.length).to.equal(0);
     });
   });
+
+  describe('Cascading dependencies', () => {
+    let Person;
+    let Comment;
+    let person;
+    let comment;
+
+    beforeEach(async () => {
+      Person = mongres.model(
+        'Person',
+        new mongres.Schema({
+          name: {
+            type: mongres.Schema.Types.String()
+          }
+        })
+      );
+      Comment = mongres.model(
+        'Comment',
+        new mongres.Schema({
+          text: {
+            type: mongres.Schema.Types.String()
+          },
+          author: {
+            type: mongres.Schema.Types.Integer(),
+            ref: 'Person',
+            cascade: true
+          }
+        })
+      );
+
+      await mongres.connect(helpers.connectionInfo);
+
+      person = await Person.create({
+        name: 'dave'
+      });
+      comment = await Comment.create({
+        text: 'test',
+        author: person.id
+      });
+    });
+
+    it('Deletes cascading dependencies', async () => {
+      await person.remove();
+      const existingComment = await Comment.findById(comment.id);
+      expect(existingComment).not.to.be.ok;
+    });
+  });
 });
