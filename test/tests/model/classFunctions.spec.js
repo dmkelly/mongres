@@ -111,6 +111,11 @@ describe('model/classFunctions', () => {
       expect(gadget).to.be.instanceof(Gadget);
       expect(gadget).to.be.instanceof(Widget);
     });
+
+    it('Adds the discriminator model to the instance models collection', () => {
+      expect(mongres.model('Gadget')).to.be.ok;
+      expect(mongres.model('Gadget')).to.equal(Gadget);
+    });
   });
 
   describe('#find()', () => {
