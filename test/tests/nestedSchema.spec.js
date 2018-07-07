@@ -281,10 +281,14 @@ describe('Nested Schemas', () => {
     describe('Many to many', () => {
       let Widget;
       let Kit;
+      let Item;
+      let Group;
       let kit1;
       let kit2;
       let widget1;
       let widget2;
+      let item1;
+      let group1;
 
       beforeEach(async () => {
         Kit = mongres.model(
@@ -313,6 +317,33 @@ describe('Nested Schemas', () => {
           })
         );
 
+        Item = mongres.model(
+          'Item',
+          new Schema({
+            name: {
+              type: Schema.Types.String()
+            },
+            groups: {
+              type: ['Group'],
+              ref: 'Group'
+            }
+          })
+        );
+
+        Group = mongres.model(
+          'Group',
+          new Schema({
+            name: {
+              type: Schema.Types.String()
+            },
+            items: {
+              type: ['Item'],
+              ref: 'Item',
+              autoPopulate: true
+            }
+          })
+        );
+
         await mongres.connect(helpers.connectionInfo);
 
         kit1 = await Kit.create({
@@ -337,6 +368,16 @@ describe('Nested Schemas', () => {
         await widget1.associate('kits', kit1);
         await widget2.associate('kits', kit1);
         await widget2.associate('kits', kit2);
+
+        item1 = await Item.create({
+          name: 'test item'
+        });
+
+        group1 = await Group.create({
+          name: 'test group'
+        });
+
+        await group1.associate('items', item1);
       });
 
       it('Safely handles preexisting associations', async () => {
@@ -366,6 +407,14 @@ describe('Nested Schemas', () => {
         expect(widget.kits.length).to.equal(2);
         expect(widget.kits[0]).to.be.instanceof(Kit);
         expect(widget.kits[1]).to.be.instanceof(Kit);
+      });
+
+      it('Automatically attaches refs with autoPopulate: true', async () => {
+        const group = await Group.findById(group1.id);
+        expect(group).to.be.ok;
+        expect(group.items).to.be.ok;
+        expect(group.items.length).to.equal(1);
+        expect(group.items[0].toObject()).to.deep.equal(item1.toObject());
       });
 
       describe('#dissociate()', () => {

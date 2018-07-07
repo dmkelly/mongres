@@ -8,11 +8,13 @@ class Field {
     this.fieldName = fieldName;
     this.columnName = fieldName;
     this.definition = definition;
+    this.autoPopulate = false;
 
     this.ref = definition.ref;
     if (this.ref) {
       this.refTableName = sanitizeName(this.ref);
       this.cascade = !!definition.cascade;
+      this.autoPopulate = !!definition.autoPopulate;
     }
 
     this.enum = definition.enum

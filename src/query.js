@@ -16,15 +16,18 @@ class Query {
 
     this.query = this.client.table(this.Model.tableName);
     this.query = this.query.select();
-
     this.adaptors = [];
+
+    const baseFields = Object.values(this.Model.schema.fields);
+
     if (this.Model.children.length) {
       this.adaptors.push(new adaptors.Children(this));
     }
     if (this.Model.Parent) {
       this.adaptors.push(new adaptors.Parent(this));
     }
-    Object.values(this.Model.schema.fields).forEach(field => {
+
+    baseFields.forEach(field => {
       if (field.isNested) {
         this.adaptors.push(new adaptors.Nested(this, field));
       }
@@ -35,6 +38,12 @@ class Query {
     if (this.options.single) {
       this.query = this.query.limit(1);
     }
+
+    baseFields.forEach(field => {
+      if (field.autoPopulate) {
+        this.populate(field.fieldName);
+      }
+    });
 
     return this;
   }
