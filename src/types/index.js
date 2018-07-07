@@ -3,6 +3,7 @@ const Date = require('./date');
 const Float = require('./float');
 const Id = require('./id');
 const Integer = require('./integer');
+const JsonArray = require('./jsonArray');
 const String = require('./string');
 
 module.exports = {
@@ -12,5 +13,6 @@ module.exports = {
   Float: (...args) => new Float(...args),
   Id: (...args) => new Id(...args),
   Integer: (...args) => new Integer(...args),
+  JsonArray: (...args) => new JsonArray(...args),
   String: (...args) => new String(...args)
 };

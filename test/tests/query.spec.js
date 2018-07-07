@@ -199,7 +199,7 @@ describe('Query', () => {
       expect(records.length).to.equal(2);
     });
 
-    it(' Supports not $exists', async () => {
+    it('Supports not $exists', async () => {
       const records = await Plot.find().where({
         c: {
           $exists: false
