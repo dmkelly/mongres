@@ -60,6 +60,7 @@ function template(text, substitutions) {
 module.exports = {
   castError,
   cloneDeep: _.cloneDeep,
+  deepEquals: _.isEqual,
   escapeRegExp,
   getRelationTableName,
   groupBy: _.groupBy,

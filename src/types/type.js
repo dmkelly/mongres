@@ -17,6 +17,10 @@ class Type {
   }
 
   isValid(/* value */) {}
+
+  serialize(value) {
+    return value;
+  }
 }
 
 module.exports = Type;

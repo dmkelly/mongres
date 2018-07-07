@@ -25,6 +25,9 @@ describe('types', () => {
         integer: {
           type: Schema.Types.Integer()
         },
+        jsonArray: {
+          type: Schema.Types.JsonArray()
+        },
         string: {
           type: Schema.Types.String()
         }
@@ -44,6 +47,7 @@ describe('types', () => {
       date: new Date(),
       float: 5.5,
       integer: 3,
+      jsonArray: [1, 'a'],
       string: 'test'
     };
     const document = await Model.create(data);

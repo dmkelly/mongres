@@ -1,11 +1,11 @@
-const { isNil } = require('../utils');
+const { deepEquals, isNil } = require('../utils');
 const Type = require('./type');
 
 class JsonArray extends Type {
   constructor(type) {
     super();
     this.type = type;
-    this.dataType = `${this.type.dataType || 'Any'}[]`;
+    this.dataType = `${this.type ? this.type.dataType : 'Any'}[]`;
   }
 
   cast(value) {
@@ -25,6 +25,10 @@ class JsonArray extends Type {
     return table.jsonb(columnName);
   }
 
+  isEqual(value1, value2) {
+    return deepEquals(value1, value2);
+  }
+
   isValid(value) {
     if (isNil(value)) {
       return true;
@@ -37,6 +41,10 @@ class JsonArray extends Type {
     }
     const hasInvalidItem = value.some(item => !this.type.isValid(item));
     return !hasInvalidItem;
+  }
+
+  serialize(value) {
+    return JSON.stringify(value);
   }
 }
 
