@@ -1,5 +1,5 @@
 const Query = require('./query');
-const { castError, isNil } = require('./utils');
+const { castError } = require('./utils');
 
 function create(Model) {
   return async function(data, { transaction } = {}) {
@@ -30,12 +30,8 @@ function findOne(Model) {
 }
 
 function findById(Model) {
-  return async function(id) {
-    id = Model.schema.fields.id.cast(id);
-    if (isNil(id)) {
-      return await null;
-    }
-    return await Model.findOne({ id });
+  return function(id) {
+    return findOne(Model)({ id });
   };
 }
 

@@ -69,7 +69,7 @@ class Populate extends Adaptor {
 
     const [backRefField] = getBackRefFields(this.query.Model, this.Ref.schema);
 
-    if (backRefField.isMulti) {
+    if (!backRefField || backRefField.isMulti) {
       // many to many
       const joinTable = getRelationTableName([this.query.Model, this.Ref]);
       const [linkedDocuments, links] = await Promise.all([
