@@ -10,8 +10,8 @@ const {
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
-async function invokeMiddleware(document, hook, middleware, isBlocking) {
-  const fns = middleware.map(mid => () => mid.execute(hook, document));
+async function invokeMiddleware(document, hook, middleware, isBlocking, tx) {
+  const fns = middleware.map(mid => () => mid.execute(hook, document, tx));
   if (isBlocking) {
     return await invokeSeries(fns);
   }
@@ -201,12 +201,12 @@ class Model {
     const hook = 'remove';
 
     if (!skipMiddleware) {
-      await invokeMiddleware(this, hook, pre, true);
+      await invokeMiddleware(this, hook, pre, true, transaction);
     }
 
     if (this.isNew && isUndefined(this.id)) {
       if (!skipMiddleware) {
-        invokeMiddleware(this, hook, post, false);
+        invokeMiddleware(this, hook, post, true, transaction);
       }
       return await null;
     }
@@ -219,7 +219,7 @@ class Model {
     );
 
     if (!skipMiddleware) {
-      invokeMiddleware(this, hook, post, false);
+      invokeMiddleware(this, hook, post, true, transaction);
     }
 
     return null;
@@ -231,7 +231,7 @@ class Model {
 
     await this.validate({ skipMiddleware });
     if (!skipMiddleware) {
-      await invokeMiddleware(this, hook, pre, true);
+      await invokeMiddleware(this, hook, pre, true, transaction);
     }
 
     const client = this.instance.client;
@@ -249,7 +249,7 @@ class Model {
     this.originalData = cloneDeep(this.data);
 
     if (!skipMiddleware) {
-      invokeMiddleware(this, hook, post, false);
+      invokeMiddleware(this, hook, post, true, transaction);
     }
 
     return this;
