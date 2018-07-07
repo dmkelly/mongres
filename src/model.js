@@ -5,6 +5,7 @@ const {
   invoke,
   invokeSeries,
   isConflictError,
+  isNil,
   isUndefined
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
@@ -111,7 +112,7 @@ class Model {
         const value = this[fieldName];
         if (value instanceof Model) {
           data[fieldName] = value.toObject();
-        } else if (!isUndefined(value)) {
+        } else if (!isNil(value)) {
           data[fieldName] = value;
         }
       }
