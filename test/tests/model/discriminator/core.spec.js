@@ -115,7 +115,7 @@ describe('model/discriminator/core', () => {
       expect(rectangle.area).to.equal(40);
     });
 
-    it('Only applies the value if it matches the type', () => {
+    it('Unsets the value if it does not match the type', () => {
       const rectangle = new Rectangle({
         height: 3,
         width: 4,
@@ -123,8 +123,8 @@ describe('model/discriminator/core', () => {
       });
       rectangle.height = 'bad';
       rectangle.area = 'bad';
-      expect(rectangle.height).to.equal(3);
-      expect(rectangle.area).to.equal(12);
+      expect(rectangle.height).not.to.be.ok;
+      expect(rectangle.area).not.to.be.ok;
     });
   });
 

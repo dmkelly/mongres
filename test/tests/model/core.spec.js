@@ -107,12 +107,12 @@ describe('model/core', () => {
       expect(widget.height).to.equal(10);
     });
 
-    it('Only applies the value if it matches the type', () => {
+    it('Unsets the value if it does not match the type', () => {
       const widget = new Widget({
         height: 5
       });
       widget.height = 'bad';
-      expect(widget.height).to.equal(5);
+      expect(widget.height).not.to.be.ok;
     });
   });
 

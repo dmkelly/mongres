@@ -442,6 +442,13 @@ describe('model/instanceFunctions', () => {
         await widget.save();
         expect(postSaveMiddleware.calledTwice).to.be.ok;
       });
+
+      it('Can unset optional fields', async () => {
+        widget.height = null;
+        await widget.save();
+        const updated = await Widget.findById(widget.id);
+        expect(updated.height).not.to.be.ok;
+      });
     });
   });
 
