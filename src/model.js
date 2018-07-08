@@ -228,9 +228,13 @@ class Model {
   async save({ transaction, skipMiddleware } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'save';
+    const isCreating = this.isNew;
 
     await this.validate({ skipMiddleware });
     if (!skipMiddleware) {
+      if (isCreating) {
+        await invokeMiddleware(this, 'create', pre, true, transaction);
+      }
       await invokeMiddleware(this, hook, pre, true, transaction);
     }
 
@@ -249,7 +253,10 @@ class Model {
     this.originalData = cloneDeep(this.data);
 
     if (!skipMiddleware) {
-      invokeMiddleware(this, hook, post, true, transaction);
+      if (isCreating) {
+        await invokeMiddleware(this, 'create', post, true, transaction);
+      }
+      await invokeMiddleware(this, hook, post, true, transaction);
     }
 
     return this;
