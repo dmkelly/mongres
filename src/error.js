@@ -1,3 +1,7 @@
+function isConflictError(err) {
+  return err.code === '23505';
+}
+
 class GenericError extends Error {
   constructor(err) {
     super(err.message);
@@ -19,6 +23,7 @@ class ValidationError extends GenericError {
 }
 
 module.exports = {
+  isConflictError,
   ConflictError,
   ValidationError
 };

@@ -1,10 +1,10 @@
+const { isConflictError, ConflictError } = require('./error');
 const Schema = require('./schema');
 const {
   cloneDeep,
   getRelationTableName,
   invoke,
   invokeSeries,
-  isConflictError,
   isNil,
   isUndefined
 } = require('./utils');
@@ -244,10 +244,17 @@ class Model {
       this[this.Parent.tableName] = this.id;
     }
 
-    if (transaction) {
-      await upsert(transaction, this);
-    } else {
-      await client.transaction(trx => upsert(trx, this));
+    try {
+      if (transaction) {
+        await upsert(transaction, this);
+      } else {
+        await client.transaction(trx => upsert(trx, this));
+      }
+    } catch (err) {
+      if (isConflictError(err)) {
+        throw new ConflictError(err);
+      }
+      throw err;
     }
 
     this.originalData = cloneDeep(this.data);

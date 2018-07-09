@@ -2,7 +2,7 @@ const _ = require('lodash');
 const error = require('./error');
 
 function castError(err) {
-  if (isConflictError(err)) {
+  if (error.isConflictError(err)) {
     return new error.ConflictError(err);
   }
   return err;
@@ -29,10 +29,6 @@ async function invokeSeries(fns) {
   for (let fn of fns) {
     await fn();
   }
-}
-
-function isConflictError(err) {
-  return err.code === '23505';
 }
 
 function mapToLookup(array) {
@@ -66,7 +62,6 @@ module.exports = {
   groupBy: _.groupBy,
   invoke,
   invokeSeries,
-  isConflictError,
   isDate: _.isDate,
   isFunction: _.isFunction,
   isNil: _.isNil,
