@@ -5,6 +5,7 @@ const Id = require('./id');
 const Integer = require('./integer');
 const JsonArray = require('./jsonArray');
 const String = require('./string');
+const Text = require('./text');
 
 module.exports = {
   Boolean: (...args) => new Boolean(...args),
@@ -14,5 +15,6 @@ module.exports = {
   Id: (...args) => new Id(...args),
   Integer: (...args) => new Integer(...args),
   JsonArray: (...args) => new JsonArray(...args),
-  String: (...args) => new String(...args)
+  String: (...args) => new String(...args),
+  Text: (...args) => new Text(...args)
 };

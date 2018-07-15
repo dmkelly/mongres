@@ -30,6 +30,9 @@ describe('types', () => {
         },
         string: {
           type: Schema.Types.String()
+        },
+        text: {
+          type: Schema.Types.Text()
         }
       })
     );
@@ -48,7 +51,8 @@ describe('types', () => {
       float: 5.5,
       integer: 3,
       jsonArray: [1, 'a'],
-      string: 'test'
+      string: 'test',
+      text: 'asdf'.repeat(256)
     };
     const document = await Model.create(data);
     const saved = await Model.findById(document.id);
