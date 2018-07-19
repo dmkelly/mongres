@@ -54,6 +54,7 @@ function template(text, substitutions) {
 }
 
 module.exports = {
+  castArray: _.castArray,
   castError,
   cloneDeep: _.cloneDeep,
   deepEquals: _.isEqual,

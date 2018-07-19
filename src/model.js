@@ -9,6 +9,7 @@ const {
   isUndefined
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
+const ModelList = require('./lib/modelList');
 
 async function invokeMiddleware(document, hook, middleware, isBlocking, tx) {
   const fns = middleware.map(mid => () => mid.execute(hook, document, tx));
@@ -102,12 +103,13 @@ class Model {
     return Object.values(this.schema.fields).reduce((data, field) => {
       const fieldName = field.fieldName;
       if (field.isMulti) {
-        data[fieldName] = this[fieldName].map(item => {
-          if (item instanceof Model) {
-            return item.toObject();
-          }
-          return item;
-        });
+        if (this[fieldName] instanceof ModelList) {
+          data[fieldName] = Array.from(this[fieldName]).map(item =>
+            item.toObject()
+          );
+        } else {
+          data[fieldName] = this[fieldName];
+        }
       } else {
         const value = this[fieldName];
         if (value instanceof Model) {
@@ -231,6 +233,7 @@ class Model {
     const isCreating = this.isNew;
 
     await this.validate({ skipMiddleware });
+
     if (!skipMiddleware) {
       if (isCreating) {
         await invokeMiddleware(this, 'create', pre, true, transaction);

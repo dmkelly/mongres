@@ -2,7 +2,7 @@ const Field = require('./field');
 const Model = require('./model');
 const statics = require('./statics');
 const Types = require('./types');
-const { isUndefined, isFunction, isNil, sanitizeName } = require('./utils');
+const { isFunction, isNil, sanitizeName } = require('./utils');
 
 function extractDefaults(fields) {
   return Object.entries(fields).reduce((defaults, [fieldName, field]) => {
