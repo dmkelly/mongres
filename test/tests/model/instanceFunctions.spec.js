@@ -150,6 +150,12 @@ describe('model/instanceFunctions', () => {
         await line.populate('start');
         expect(line.start).to.equal(1000);
       });
+
+      it('Handles when the populated field is empty', async () => {
+        line.start = null;
+        await line.populate('start');
+        expect(line.start).not.to.be.ok;
+      });
     });
 
     describe('Complicated scenarios', () => {

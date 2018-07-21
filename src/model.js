@@ -186,6 +186,10 @@ class Model {
       return await this;
     }
 
+    if (this[field.fieldName] == null) {
+      return await this;
+    }
+
     const Ref = this.instance.model(field.ref);
     if (!Ref) {
       return await this;
