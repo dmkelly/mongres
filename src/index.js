@@ -1,4 +1,5 @@
 const knex = require('knex');
+const pkg = require('../package.json');
 const errors = require('./error');
 const Model = require('./model');
 const Schema = require('./schema');
@@ -15,6 +16,7 @@ function createModel(instance, name, schema) {
 
 class Mongres {
   constructor() {
+    this.version = pkg.version;
     this.client = null;
     this.Schema = Schema;
     this.models = new Map();
