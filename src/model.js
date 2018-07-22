@@ -5,11 +5,11 @@ const {
   getRelationTableName,
   invoke,
   invokeSeries,
+  isFunction,
   isNil,
   isUndefined
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
-const ModelList = require('./lib/modelList');
 
 async function invokeMiddleware(document, hook, middleware, isBlocking, tx) {
   const fns = middleware.map(mid => () => mid.execute(hook, document, tx));
@@ -102,14 +102,12 @@ class Model {
   toObject() {
     return Object.values(this.schema.fields).reduce((data, field) => {
       const fieldName = field.fieldName;
-      if (field.isMulti) {
-        if (this[fieldName] instanceof ModelList) {
-          data[fieldName] = Array.from(this[fieldName]).map(item =>
-            item.toObject()
-          );
-        } else {
-          data[fieldName] = this[fieldName];
-        }
+      if (Array.isArray(this[fieldName])) {
+        data[fieldName] = Array.from(
+          this[fieldName].map(item => {
+            return isFunction(item.toObject) ? item.toObject() : item;
+          })
+        );
       } else {
         const value = this[fieldName];
         if (value instanceof Model) {
