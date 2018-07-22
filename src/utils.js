@@ -64,6 +64,7 @@ module.exports = {
   invoke,
   invokeSeries,
   isDate: _.isDate,
+  isEmpty: _.isEmpty,
   isFunction: _.isFunction,
   isNil: _.isNil,
   isNumber: _.isNumber,

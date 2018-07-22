@@ -1,5 +1,6 @@
 const Adaptor = require('./adaptor');
 const { getBackRefFields } = require('../../model');
+const { isEmpty } = require('../../../utils');
 
 class Nested extends Adaptor {
   constructor(query, field) {
@@ -14,12 +15,25 @@ class Nested extends Adaptor {
       this.query.Model,
       this.field.type.schema
     );
+
     const Query = this.query.constructor;
 
     const idIndexLookup = results.reduce((lookup, document, index) => {
       lookup[document.id] = index;
       return lookup;
     }, {});
+
+    if (isEmpty(idIndexLookup)) {
+      return results;
+    }
+
+    if (!backRefField) {
+      throw await new Error(
+        `No field found on nested document that references ${
+          this.query.Model.modelName
+        }`
+      );
+    }
 
     const nestedResults = await new Query(this.field.type).where({
       [backRefField.fieldName]: {
