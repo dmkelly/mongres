@@ -122,7 +122,7 @@ class Query {
     return this;
   }
 
-  then(callback) {
+  exec() {
     return this.query
       .then(records => records.map(record => toModel(record, this)))
       .then(async results => {
@@ -136,12 +136,15 @@ class Query {
           return records;
         }
         return records.length ? records[0] : null;
-      })
-      .then(records => callback(records));
+      });
   }
 
-  catch(callback) {
-    return this.query.catch(callback);
+  then(resolve, reject) {
+    return this.exec().then(resolve, reject);
+  }
+
+  catch(reject) {
+    return this.query.exec().then(null, reject);
   }
 }
 
