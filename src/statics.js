@@ -2,7 +2,7 @@ const Query = require('./query');
 const { castError } = require('./utils');
 
 function create(Model) {
-  return async function(data, { transaction } = {}) {
+  return async function create(data, { transaction } = {}) {
     const document = new Model(data);
     let result;
 
@@ -16,13 +16,13 @@ function create(Model) {
 }
 
 function find(Model) {
-  return function(filters = {}) {
+  return function find(filters = {}) {
     return new Query(Model, {}).where(filters);
   };
 }
 
 function findOne(Model) {
-  return function(filters = {}) {
+  return function findOne(filters = {}) {
     return new Query(Model, {
       single: true
     }).where(filters);
@@ -30,13 +30,13 @@ function findOne(Model) {
 }
 
 function findById(Model) {
-  return function(id) {
+  return function findById(id) {
     return findOne(Model)({ id });
   };
 }
 
 function remove(Model, instance) {
-  return async function(filters, { transaction } = {}) {
+  return async function remove(filters, { transaction } = {}) {
     if (!filters) {
       throw await new Error('Model.remove() requires conditions');
     }
@@ -70,7 +70,7 @@ function remove(Model, instance) {
 }
 
 function update(Model, instance) {
-  return async function(filters, changes, { transaction } = {}) {
+  return async function update(filters, changes, { transaction } = {}) {
     const client = instance.client;
     let query = client
       .table(Model.tableName)
