@@ -262,6 +262,10 @@ describe('model/instanceFunctions', () => {
         expect(a.gadget.points[0]).to.be.instanceof(NestedPoint);
         expect(a.gadget.points[1]).to.be.instanceof(NestedPoint);
       });
+
+      it('Throws an error when called on a field that cannot populate', () => {
+        return expect(device1.populate('name')).to.be.rejectedWith(Error);
+      });
     });
   });
 

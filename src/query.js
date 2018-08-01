@@ -63,14 +63,14 @@ class Query {
     const isParent = parentExists && fieldName === this.Model.Parent.tableName;
 
     if (!refExists && !isParent) {
-      return this;
+      throw new Error(`Field ${field.fieldName} does not support populate`);
     }
 
     const Ref = isParent
       ? this.Model.Parent
       : this.Model.instance.model(field.ref);
     if (!Ref) {
-      return this;
+      throw new Error(`Field ${field.fieldName} does not support populate`);
     }
 
     if (!adaptors.Populate.exists(this, Ref, field)) {

@@ -278,6 +278,10 @@ describe('model/classFunctions', () => {
       expect(result.name).to.equal(itemA.name);
       expect(result.widget).to.be.instanceof(Widget);
     });
+
+    it('Throws an error when called on a field that cannot populate', () => {
+      expect(() => Item.find().populate('name')).to.throw(Error);
+    });
   });
 
   describe('#remove()', () => {

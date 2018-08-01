@@ -181,7 +181,9 @@ class Model {
   async populate(fieldName) {
     const field = this.schema.fields[fieldName];
     if (!field || !field.ref) {
-      return await this;
+      throw await new Error(
+        `Field ${field.fieldName} does not support populate`
+      );
     }
 
     if (this[field.fieldName] == null) {
