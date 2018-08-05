@@ -1,21 +1,21 @@
 const Adaptor = require('./adaptor');
 
 class Parent extends Adaptor {
-  constructor(query) {
+  constructor(query, Model) {
     super(query);
 
     this.name = 'Parent';
 
-    const Model = this.query.Model;
+    this.Model = Model || this.query.Model;
 
     this.query.query = this.query.query.join(
-      Model.Parent.tableName,
-      `${Model.tableName}.id`,
-      `${Model.Parent.tableName}.id`
+      this.Model.Parent.tableName,
+      `${this.Model.tableName}.id`,
+      `${this.Model.Parent.tableName}.id`
     );
   }
 
-  ensureColumnNamespace(field, Model = this.query.Model) {
+  ensureColumnNamespace(field, Model = this.Model) {
     if (Model.subSchema.fields[field.fieldName]) {
       return super.ensureColumnNamespace(field, Model);
     }
@@ -30,7 +30,7 @@ class Parent extends Adaptor {
     return null;
   }
 
-  getFieldsList(Model = this.query.Model) {
+  getFieldsList(Model = this.Model) {
     let fields = super.getFieldsList(Model);
 
     let Parent = Model.Parent;
@@ -43,7 +43,7 @@ class Parent extends Adaptor {
   }
 
   getModelForTable(tableName) {
-    let Parent = this.query.Model.Parent;
+    let Parent = this.Model.Parent;
     while (Parent) {
       if (Parent.tableName === tableName) {
         return Parent;
@@ -53,7 +53,7 @@ class Parent extends Adaptor {
     return null;
   }
 
-  toModel(lookups, document, Model = this.query.Model) {
+  toModel(lookups, document, Model = this.Model) {
     let Parent = Model.Parent;
     while (Parent) {
       document = super.toModel(lookups, document, Parent);

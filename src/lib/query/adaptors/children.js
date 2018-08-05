@@ -2,21 +2,22 @@ const Adaptor = require('./adaptor');
 const Parent = require('./parent');
 
 class Children extends Adaptor {
-  constructor(query) {
+  constructor(query, Model) {
     super(query);
 
     this.name = 'Children';
+    this.Model = Model || this.query.Model;
 
-    for (let Child of this.query.Model.children) {
+    for (let Child of this.Model.children) {
       this.query.query = this.query.query.leftJoin(
         Child.tableName,
-        `${this.query.Model.tableName}.id`,
+        `${this.Model.tableName}.id`,
         `${Child.tableName}.id`
       );
     }
   }
 
-  getFieldsList(Model = this.query.Model) {
+  getFieldsList(Model = this.Model) {
     const baseFields = super.getFieldsList(Model);
 
     const allFields = Model.children.reduce((fieldsList, Child) => {
@@ -27,7 +28,7 @@ class Children extends Adaptor {
     return allFields;
   }
 
-  toModel(lookups, document, Model = this.query.Model) {
+  toModel(lookups, document, Model = this.Model) {
     // Model is already cast as the child instance
     return Parent.prototype.toModel.call(this, lookups, document, Model);
   }

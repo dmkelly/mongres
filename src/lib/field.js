@@ -1,6 +1,10 @@
 const { ValidationError } = require('../error');
 const { isFunction, isNil, template } = require('../utils');
 
+function getTypeModel(field) {
+  return getRef(field) || field.type;
+}
+
 function getRef(field) {
   if (!field.ref) {
     return null;
@@ -53,5 +57,6 @@ function validateField(field, value) {
 
 module.exports = {
   getRef,
+  getTypeModel,
   validateField
 };

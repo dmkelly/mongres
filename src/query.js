@@ -33,8 +33,6 @@ class Query {
       }
     });
 
-    this.query = this.query.column(toColumns(getFieldsList(this)));
-
     if (this.options.single) {
       this.query = this.query.limit(1);
     }
@@ -86,15 +84,12 @@ class Query {
   }
 
   sort(...args) {
-    const [field, direction] = normalizeSortArgs(...args);
-    if (!field || !direction) {
-      return this;
-    }
-    if (!this.Model.schema.fields[field]) {
+    const [fieldName, direction] = normalizeSortArgs(...args);
+    if (!fieldName || !direction) {
       return this;
     }
 
-    this.query = this.query.orderBy(field, direction);
+    this.query = this.query.orderBy(fieldName, direction);
     return this;
   }
 
@@ -122,8 +117,10 @@ class Query {
     return this;
   }
 
-  exec() {
-    return this.query
+  async exec() {
+    this.query = this.query.column(toColumns(getFieldsList(this)));
+
+    return await this.query
       .then(records => records.map(record => toModel(record, this)))
       .then(async results => {
         for (let adaptor of this.adaptors) {
@@ -145,6 +142,10 @@ class Query {
 
   catch(reject) {
     return this.query.exec().then(null, reject);
+  }
+
+  toSQL() {
+    return this.query.toSQL();
   }
 }
 
