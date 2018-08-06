@@ -186,7 +186,7 @@ class Model {
       );
     }
 
-    if (this[field.fieldName] == null) {
+    if (isNil(this[field.fieldName])) {
       return await this;
     }
 

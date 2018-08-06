@@ -1,6 +1,7 @@
 const {
   getRelationTableName,
   groupBy,
+  isNil,
   keyBy,
   mapToLookup: toColumns
 } = require('../../../utils');
@@ -32,17 +33,50 @@ async function attachRefNested(attachField, backRefField, refDocuments, query) {
   });
 }
 
-async function attachRefAutoPopulate(attachField, refDocuments, query) {
+async function attachRefSingleAutoPopulate(attachField, refDocuments, query) {
   const results = await query;
-  const resultsLookup = results.reduce((lookup, document) => {
-    lookup[document.id] = document;
-    return lookup;
-  }, {});
+  const resultsLookup = keyBy(results, 'id');
 
   return refDocuments.map(document => {
     const populatedDocument = resultsLookup[document[attachField.fieldName]];
     if (populatedDocument) {
       document[attachField.fieldName] = populatedDocument;
+    }
+    return document;
+  });
+}
+
+async function attachRefMultiAutoPopulate(
+  Ref,
+  attachField,
+  refDocuments,
+  refQuery,
+  joinQuery
+) {
+  const [results, links] = await Promise.all([refQuery, joinQuery]);
+  const resultsLookup = keyBy(results, 'id');
+  const MultiModel = getTypeModel(attachField);
+  const baseJoinFieldName = Ref.tableName;
+  const multiJoinFieldName = MultiModel.tableName;
+
+  const joinLookup = links.reduce((lookup, link) => {
+    const baseId = link[baseJoinFieldName];
+    if (!lookup[baseId]) {
+      lookup[baseId] = new ModelList(MultiModel);
+    }
+
+    const multiDocument = resultsLookup[link[multiJoinFieldName]];
+
+    if (multiDocument) {
+      lookup[baseId].push(multiDocument);
+    }
+    return lookup;
+  }, {});
+
+  return refDocuments.map(document => {
+    const multiDocuments = joinLookup[document.id];
+    if (multiDocuments) {
+      document[attachField.fieldName] = multiDocuments;
     }
     return document;
   });
@@ -121,14 +155,14 @@ class Populate extends Adaptor {
         }
 
         const RefModel = getTypeModel(field);
-        const joinIds = results.reduce((ids, document) => {
-          if (document[fieldName] && document[fieldName].id != null) {
-            ids.push(document[fieldName].id);
-          }
-          return ids;
-        }, []);
 
         if (field.isNested) {
+          const joinIds = results.reduce((ids, document) => {
+            if (document[fieldName] && !isNil(document[fieldName].id)) {
+              ids.push(document[fieldName].id);
+            }
+            return ids;
+          }, []);
           const [backRefField] = getBackRefFields(this.Ref, RefModel.schema);
           const query = RefModel.find({
             [backRefField.fieldName]: {
@@ -139,12 +173,48 @@ class Populate extends Adaptor {
             attachRefNested(field, backRefField, refDocuments, query)
           );
         } else if (field.autoPopulate) {
-          const query = RefModel.find({
-            id: {
-              $in: joinIds
+          const joinIds = results.reduce((ids, document) => {
+            const refDocument = document[fieldName];
+            if (refDocument && !isNil(refDocument[field.fieldName])) {
+              ids.push(refDocument[field.fieldName]);
             }
-          });
-          populates.push(attachRefAutoPopulate(field, refDocuments, query));
+            return ids;
+          }, []);
+
+          if (field.isMulti) {
+            const joinTable = getRelationTableName([this.Ref, RefModel]);
+            const resultIds = refDocuments.map(document => document.id);
+            const query = RefModel.find().where((builder, knex) => {
+              const subquery = knex
+                .table(joinTable)
+                .where(this.Ref.tableName, 'in', resultIds)
+                .select(RefModel.tableName);
+
+              builder.where('id', 'in', subquery);
+            });
+            const joinQuery = this.query.client
+              .table(joinTable)
+              .where(this.Ref.tableName, 'in', resultIds);
+
+            populates.push(
+              attachRefMultiAutoPopulate(
+                this.Ref,
+                field,
+                refDocuments,
+                query,
+                joinQuery
+              )
+            );
+          } else {
+            const query = RefModel.find({
+              id: {
+                $in: joinIds
+              }
+            });
+            populates.push(
+              attachRefSingleAutoPopulate(field, refDocuments, query)
+            );
+          }
         }
 
         return populates;
@@ -173,10 +243,7 @@ class Populate extends Adaptor {
           $in: resultIds
         }
       });
-      const lookup = linkedDocuments.reduce((lookup, document) => {
-        lookup[document.id] = document;
-        return lookup;
-      }, {});
+      const lookup = keyBy(linkedDocuments, 'id');
 
       return results.map(result => {
         const reference = result[fieldName];
