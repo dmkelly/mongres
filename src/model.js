@@ -3,11 +3,13 @@ const Schema = require('./schema');
 const {
   cloneDeep,
   getRelationTableName,
+  groupBy,
   invoke,
   invokeSeries,
   isFunction,
   isNil,
-  isUndefined
+  isUndefined,
+  keyBy
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
@@ -193,6 +195,33 @@ class Model {
     const Ref = this.instance.model(field.ref);
     if (!Ref) {
       return await this;
+    }
+
+    if (field.isMulti) {
+      const [backRefField] = getBackRefFields(this.constructor, Ref.schema);
+
+      if (backRefField && !backRefField.isMulti) {
+        const records = await Ref.find({
+          [backRefField.columnName]: this.id
+        });
+        this[fieldName] = records;
+
+        return this;
+      }
+
+      const joinTable = getRelationTableName([this.constructor, Ref]);
+      const records = await Ref.find().where((builder, knex) => {
+        const subquery = knex
+          .table(joinTable)
+          .where(this.constructor.tableName, this.id)
+          .select(Ref.tableName);
+
+        builder.where('id', 'in', subquery);
+      });
+
+      this[fieldName] = records;
+
+      return this;
     }
 
     const record = await Ref.findById(this[fieldName]);
