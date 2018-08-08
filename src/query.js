@@ -89,7 +89,11 @@ class Query {
       return this;
     }
 
-    this.query = this.query.orderBy(fieldName, direction);
+    const prefixedFieldName = fieldName.includes('.')
+      ? fieldName
+      : `${this.Model.tableName}.${fieldName}`;
+
+    this.query = this.query.orderBy(prefixedFieldName, direction);
     return this;
   }
 
