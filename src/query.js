@@ -8,14 +8,31 @@ const {
 } = require('./lib/query');
 const { isFunction, mapToLookup: toColumns, pick } = require('./utils');
 
+const defaultOptions = {
+  operation: 'select',
+  raw: false,
+  single: false,
+  transaction: null
+};
+
 class Query {
   constructor(Model, options = {}) {
     this.Model = Model;
-    this.options = options;
-    this.client = this.Model.instance.client;
+    this.options = Object.assign({}, defaultOptions, options);
 
-    this.query = this.client.table(this.Model.tableName);
-    this.query = this.query.select();
+    if (!this.options.table) {
+      this.options.table = this.Model.tableName;
+    }
+
+    this.client = this.Model.instance.client;
+    this.fields = null;
+
+    this.query = this.client.table(this.options.table);
+    this.query = this.query[this.options.operation]();
+    if (this.options.transaction) {
+      this.query = this.query.transacting(this.options.transaction);
+    }
+
     this.adaptors = [];
 
     const baseFields = Object.values(this.Model.schema.fields);
@@ -43,6 +60,12 @@ class Query {
       }
     });
 
+    return this;
+  }
+
+  columns(columns) {
+    this.fields = columns;
+    this.query = this.query.column(columns);
     return this;
   }
 
@@ -122,22 +145,23 @@ class Query {
   }
 
   async exec() {
-    this.query = this.query.column(toColumns(getFieldsList(this)));
+    if (!this.fields) {
+      this.query = this.query.column(toColumns(getFieldsList(this)));
+    }
 
-    return await this.query
-      .then(records => records.map(record => toModel(record, this)))
-      .then(async results => {
-        for (let adaptor of this.adaptors) {
-          results = await adaptor.reconcile(results);
-        }
-        return results;
-      })
-      .then(records => {
-        if (!this.options.single) {
-          return records;
-        }
-        return records.length ? records[0] : null;
-      });
+    const result = await this.query;
+    if (this.options.operation !== 'select' || this.options.raw) {
+      return result;
+    }
+
+    let records = result.map(record => toModel(record, this));
+    for (let adaptor of this.adaptors) {
+      records = await adaptor.reconcile(records);
+    }
+    if (!this.options.single) {
+      return records;
+    }
+    return records.length ? records[0] : null;
   }
 
   then(resolve, reject) {

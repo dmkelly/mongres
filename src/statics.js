@@ -35,34 +35,31 @@ function findById(Model) {
   };
 }
 
-function remove(Model, instance) {
+function remove(Model) {
   return async function remove(filters, { transaction } = {}) {
     if (!filters) {
       throw await new Error('Model.remove() requires conditions');
     }
-    const client = instance.client;
 
     if (Model.Parent) {
       // Remove corresponding parents and rely on foreign key cascades to remove
       // children
       return Model.Parent.remove(builder => {
-        const subquery = client
-          .table(Model.tableName)
-          .where(filters)
-          .select(Model.Parent.tableName);
+        const subquery = new Query(Model, {
+          raw: true,
+          transaction
+        })
+          .columns([Model.Parent.tableName])
+          .where(filters).query;
         builder.where('id', 'in', subquery);
       });
     }
 
-    let query = client
-      .table(Model.tableName)
-      .where(filters)
-      .del();
-    if (transaction) {
-      query = query.transacting(transaction);
-    }
+    const result = await new Query(Model, {
+      operation: 'delete',
+      transaction
+    }).where(filters);
 
-    const result = await query;
     return {
       nModified: result
     };

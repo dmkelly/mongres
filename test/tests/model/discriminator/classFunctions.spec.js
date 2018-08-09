@@ -450,5 +450,13 @@ describe('model/discriminator/classFunctions', () => {
       const circleCount = await helpers.query.count(Circle.tableName);
       expect(circleCount).to.equal(1);
     });
+
+    it('Supports query syntax', async () => {
+      await Rectangle.remove({
+        height: {
+          $in: [40]
+        }
+      });
+    });
   });
 });
