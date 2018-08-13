@@ -59,6 +59,7 @@ module.exports = {
   cloneDeep: _.cloneDeep,
   deepEquals: _.isEqual,
   escapeRegExp,
+  get: _.get,
   getRelationTableName,
   groupBy: _.groupBy,
   invoke,

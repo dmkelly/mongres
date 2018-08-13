@@ -431,7 +431,7 @@ describe('model/instanceFunctions', () => {
         });
         expect(row.id).to.equal(1);
         expect(row.height).to.equal(8);
-        const count = await helpers.query.count(Widget.tableName);
+        const count = await Widget.count();
         expect(count).to.equal(1);
       });
 

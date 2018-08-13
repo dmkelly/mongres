@@ -1,6 +1,12 @@
 const Query = require('./query');
 const { castError } = require('./utils');
 
+function count(Model) {
+  return function count(filters = {}) {
+    return find(Model)(filters).count();
+  };
+}
+
 function create(Model) {
   return async function create(data, { transaction } = {}) {
     const document = new Model(data);
@@ -56,7 +62,7 @@ function remove(Model) {
     }
 
     const result = await new Query(Model, {
-      operation: 'delete',
+      operation: Query.operations.DELETE,
       transaction
     }).where(filters);
 
@@ -85,6 +91,7 @@ function update(Model, instance) {
 }
 
 module.exports = {
+  count,
   create,
   find,
   findOne,

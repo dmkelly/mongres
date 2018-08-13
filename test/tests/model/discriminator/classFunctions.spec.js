@@ -406,9 +406,9 @@ describe('model/discriminator/classFunctions', () => {
 
     it('Can remove multiple items at once', async () => {
       await Rectangle.remove({});
-      const rectangleCount = await helpers.query.count(Rectangle.tableName);
+      const rectangleCount = await Rectangle.count();
       expect(rectangleCount).to.equal(0);
-      const parentCount = await helpers.query.count(Shape.tableName);
+      const parentCount = await Shape.count();
       expect(parentCount).to.equal(1);
     });
 
@@ -416,7 +416,7 @@ describe('model/discriminator/classFunctions', () => {
       await Rectangle.remove({
         height: 10
       });
-      const count = await helpers.query.count(Rectangle.tableName);
+      const count = await Rectangle.count();
       expect(count).to.equal(1);
 
       const removedItem = await Rectangle.findOne({
@@ -434,7 +434,7 @@ describe('model/discriminator/classFunctions', () => {
       await Rectangle.remove({
         area: 40
       });
-      const count = await helpers.query.count(Rectangle.tableName);
+      const count = await Rectangle.count();
       expect(count).to.equal(1);
 
       const removedItem = await Rectangle.findOne({
@@ -447,7 +447,7 @@ describe('model/discriminator/classFunctions', () => {
       });
       expect(remainingItem).to.be.ok;
 
-      const circleCount = await helpers.query.count(Circle.tableName);
+      const circleCount = await Circle.count();
       expect(circleCount).to.equal(1);
     });
 

@@ -6,10 +6,15 @@ const {
   normalizeSortArgs,
   toModel
 } = require('./lib/query');
-const { isFunction, mapToLookup: toColumns, pick } = require('./utils');
+const { get, isFunction, mapToLookup: toColumns, pick } = require('./utils');
+
+const operations = {
+  DELETE: 'delete',
+  SELECT: 'select'
+};
 
 const defaultOptions = {
-  operation: 'select',
+  operation: operations.SELECT,
   raw: false,
   single: false,
   transaction: null
@@ -26,9 +31,10 @@ class Query {
 
     this.client = this.Model.instance.client;
     this.fields = null;
+    this.isCount = false;
 
     this.query = this.client.table(this.options.table);
-    this.query = this.query[this.options.operation]();
+
     if (this.options.transaction) {
       this.query = this.query.transacting(this.options.transaction);
     }
@@ -66,6 +72,16 @@ class Query {
   columns(columns) {
     this.fields = columns;
     this.query = this.query.column(columns);
+    return this;
+  }
+
+  count() {
+    if (this.options.operation !== operations.SELECT) {
+      throw new Error('Cannot query count on a non-select operation');
+    }
+
+    this.isCount = true;
+
     return this;
   }
 
@@ -145,12 +161,24 @@ class Query {
   }
 
   async exec() {
-    if (!this.fields) {
+    if (!this.isCount && !this.fields) {
       this.query = this.query.column(toColumns(getFieldsList(this)));
     }
 
+    if (this.isCount) {
+      this.query = this.query.select(this.client.raw('count(*) as count'));
+    } else {
+      this.query = this.query[this.options.operation]();
+    }
+
     const result = await this.query;
-    if (this.options.operation !== 'select' || this.options.raw) {
+
+    if (this.isCount) {
+      const count = get(result[0], 'count') || 0;
+      return Number(count);
+    }
+
+    if (this.options.operation !== operations.SELECT || this.options.raw) {
       return result;
     }
 
@@ -176,5 +204,7 @@ class Query {
     return this.query.toSQL();
   }
 }
+
+Query.operations = operations;
 
 module.exports = Query;

@@ -299,7 +299,7 @@ describe('model/classFunctions', () => {
 
     it('Can remove multiple items at once', async () => {
       await Widget.remove({});
-      const count = await helpers.query.count(Widget.tableName);
+      const count = await Widget.count();
       expect(count).to.equal(0);
     });
 
@@ -307,7 +307,7 @@ describe('model/classFunctions', () => {
       await Widget.remove({
         height: 10
       });
-      const count = await helpers.query.count(Widget.tableName);
+      const count = await Widget.count();
       expect(count).to.equal(1);
 
       const removedItem = await Widget.findOne({
