@@ -71,7 +71,7 @@ class Query {
 
   columns(columns) {
     this.fields = columns;
-    this.query = this.query.column(columns);
+    this.query = this.query.column(this.fields);
     return this;
   }
 
@@ -161,14 +161,14 @@ class Query {
   }
 
   async exec() {
-    if (!this.isCount && !this.fields) {
-      this.query = this.query.column(toColumns(getFieldsList(this)));
-    }
-
     if (this.isCount) {
       this.query = this.query.select(this.client.raw('count(*) as count'));
     } else {
       this.query = this.query[this.options.operation]();
+
+      if (!this.fields) {
+        this.query = this.query.column(toColumns(getFieldsList(this)));
+      }
     }
 
     const result = await this.query;

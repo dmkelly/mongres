@@ -100,6 +100,7 @@ class Populate extends Adaptor {
     this.Ref = Ref;
     this.field = field;
     this.adaptors = [];
+    this.columns = [];
 
     // Determine if the query was able to include all the data with a join
     this.isSelfContained =
@@ -109,13 +110,12 @@ class Populate extends Adaptor {
       !hasNestedFields(this.Ref.schema);
 
     if (!this.field.isMulti) {
-      this.query.query = this.query.query
-        .leftJoin(
-          this.Ref.tableName,
-          `${this.query.Model.tableName}.${field.columnName}`,
-          `${this.Ref.tableName}.id`
-        )
-        .column(toColumns(super.getFieldsList(Ref)));
+      this.query.query = this.query.query.leftJoin(
+        this.Ref.tableName,
+        `${this.query.Model.tableName}.${field.columnName}`,
+        `${this.Ref.tableName}.id`
+      );
+      this.columns = super.getFieldsList(Ref);
     }
 
     if (Ref.children.length) {
@@ -136,7 +136,7 @@ class Populate extends Adaptor {
         }
       });
       return fields;
-    }, []);
+    }, this.columns);
   }
 
   async reconcile(results) {
