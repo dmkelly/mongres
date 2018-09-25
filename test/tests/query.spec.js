@@ -71,6 +71,30 @@ describe('Query', () => {
     return mongres.disconnect();
   });
 
+  describe('#count()', () => {
+    it('Identifies the number of records', async () => {
+      const count = await Plot.find().count();
+      expect(count).to.equal(3);
+    });
+
+    it('Can be called as a first class static function', async () => {
+      const count = await Plot.count();
+      expect(count).to.equal(3);
+    });
+
+    it('Supports filters', async () => {
+      let count = await Plot.find({
+        a: 2
+      }).count();
+      expect(count).to.equal(1);
+
+      count = await Plot.count({
+        a: 2
+      });
+      expect(count).to.equal(1);
+    });
+  });
+
   describe('#limit()', () => {
     it('Supports limiting result size', async () => {
       const records = await Plot.find().limit(2);
@@ -199,7 +223,7 @@ describe('Query', () => {
       expect(records.length).to.equal(2);
     });
 
-    it(' Supports not $exists', async () => {
+    it('Supports not $exists', async () => {
       const records = await Plot.find().where({
         c: {
           $exists: false

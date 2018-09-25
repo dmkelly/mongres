@@ -18,7 +18,7 @@ function serialize(document, schema) {
     if (field.ref) {
       const Ref = instance.model(field.ref);
       if (Ref && value instanceof Ref) {
-        data[field.columnName] = value.id;
+        data[field.columnName] = field.type.serialize(value.id);
         return data;
       }
     }
@@ -27,7 +27,7 @@ function serialize(document, schema) {
       return data;
     }
 
-    data[field.columnName] = value;
+    data[field.columnName] = field.type.serialize(value);
     return data;
   }, {});
   return data;

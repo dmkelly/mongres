@@ -150,6 +150,12 @@ describe('model/instanceFunctions', () => {
         await line.populate('start');
         expect(line.start).to.equal(1000);
       });
+
+      it('Handles when the populated field is empty', async () => {
+        line.start = null;
+        await line.populate('start');
+        expect(line.start).not.to.be.ok;
+      });
     });
 
     describe('Complicated scenarios', () => {
@@ -255,6 +261,10 @@ describe('model/instanceFunctions', () => {
         expect(a.gadget.points.length).to.equal(2);
         expect(a.gadget.points[0]).to.be.instanceof(NestedPoint);
         expect(a.gadget.points[1]).to.be.instanceof(NestedPoint);
+      });
+
+      it('Throws an error when called on a field that cannot populate', () => {
+        return expect(device1.populate('name')).to.be.rejectedWith(Error);
       });
     });
   });
@@ -421,7 +431,7 @@ describe('model/instanceFunctions', () => {
         });
         expect(row.id).to.equal(1);
         expect(row.height).to.equal(8);
-        const count = await helpers.query.count(Widget.tableName);
+        const count = await Widget.count();
         expect(count).to.equal(1);
       });
 
@@ -441,6 +451,13 @@ describe('model/instanceFunctions', () => {
         expect(postSaveMiddleware.calledOnce).to.be.ok;
         await widget.save();
         expect(postSaveMiddleware.calledTwice).to.be.ok;
+      });
+
+      it('Can unset optional fields', async () => {
+        widget.height = null;
+        await widget.save();
+        const updated = await Widget.findById(widget.id);
+        expect(updated.height).not.to.be.ok;
       });
     });
   });

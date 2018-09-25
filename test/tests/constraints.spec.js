@@ -1,5 +1,5 @@
 const helpers = require('../helpers');
-const { Mongres, Schema } = require('../../src');
+const { Mongres, Schema, error } = require('../../src');
 
 describe('constraints', () => {
   let mongres;
@@ -61,20 +61,44 @@ describe('constraints', () => {
     expect(foreignKey.constraint_name).to.equal('test_testfield_foreign');
   });
 
-  it('Supports unique constraints', async () => {
-    const schema = new Schema({
-      testField: {
-        type: Schema.Types.Integer(),
-        unique: true
-      }
-    });
-    const Model = mongres.model('Test', schema);
-    await mongres.connect(helpers.connectionInfo);
-    const rows = await helpers.table.describeConstraints(Model.tableName);
+  describe('unique constraints', () => {
+    let Model;
 
-    const constraint = rows.find(row => row.constraint_type === 'UNIQUE');
-    expect(constraint).to.be.ok;
-    expect(constraint.constraint_name).to.equal('test_testfield_unique');
+    beforeEach(async () => {
+      const schema = new Schema({
+        testField: {
+          type: Schema.Types.Integer(),
+          unique: true
+        }
+      });
+      Model = mongres.model('Test', schema);
+      await mongres.connect(helpers.connectionInfo);
+    });
+
+    it('Creates unique constraints', async () => {
+      const rows = await helpers.table.describeConstraints(Model.tableName);
+
+      const constraint = rows.find(row => row.constraint_type === 'UNIQUE');
+      expect(constraint).to.be.ok;
+      expect(constraint.constraint_name).to.equal('test_testfield_unique');
+    });
+
+    it('Throws ConflictError when violated', async () => {
+      const existing = await Model.create({
+        testField: 1
+      });
+      const duplicate = new Model({
+        testField: existing.testField
+      });
+
+      await expect(
+        Model.create({
+          testField: existing.testField
+        })
+      ).to.be.rejectedWith(error.ConflictError);
+
+      await expect(duplicate.save()).to.be.rejectedWith(error.ConflictError);
+    });
   });
 
   it('Supports indexes', async () => {

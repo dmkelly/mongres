@@ -1,7 +1,7 @@
 const utils = require('../../src/utils');
 
 describe('utils', () => {
-  describe('#tempate()', () => {
+  describe('#template()', () => {
     it('Replaces parts of a string', () => {
       expect(
         utils.template('the value is {value}', {

@@ -220,16 +220,35 @@ describe('model/classFunctions', () => {
   });
 
   describe('#findById()', () => {
+    let Item;
     let widgetA;
     let widgetB;
+    let itemA;
 
     beforeEach(async () => {
+      Item = mongres.model(
+        'Item',
+        new Schema({
+          name: {
+            type: Schema.Types.String()
+          },
+          widget: {
+            type: Schema.Types.Integer(),
+            ref: 'Widget'
+          }
+        })
+      );
+
       await mongres.connect(helpers.connectionInfo);
       widgetA = await new Widget({
         height: 5
       }).save();
       widgetB = await new Widget({
         height: 10
+      }).save();
+      itemA = await new Item({
+        name: 'test',
+        widget: widgetA.id
       }).save();
     });
 
@@ -252,6 +271,17 @@ describe('model/classFunctions', () => {
       const result = await Widget.findById(`${widgetA.id}`);
       expect(result.id).to.equal(widgetA.id);
     });
+
+    it('Supports chaining', async () => {
+      const result = await Item.findById(itemA.id).populate('widget');
+      expect(result.id).to.equal(itemA.id);
+      expect(result.name).to.equal(itemA.name);
+      expect(result.widget).to.be.instanceof(Widget);
+    });
+
+    it('Throws an error when called on a field that cannot populate', () => {
+      expect(() => Item.find().populate('name')).to.throw(Error);
+    });
   });
 
   describe('#remove()', () => {
@@ -269,7 +299,7 @@ describe('model/classFunctions', () => {
 
     it('Can remove multiple items at once', async () => {
       await Widget.remove({});
-      const count = await helpers.query.count(Widget.tableName);
+      const count = await Widget.count();
       expect(count).to.equal(0);
     });
 
@@ -277,7 +307,7 @@ describe('model/classFunctions', () => {
       await Widget.remove({
         height: 10
       });
-      const count = await helpers.query.count(Widget.tableName);
+      const count = await Widget.count();
       expect(count).to.equal(1);
 
       const removedItem = await Widget.findOne({

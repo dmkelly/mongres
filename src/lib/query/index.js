@@ -19,16 +19,16 @@ function ensureColumnNamespace(query, field) {
 }
 
 function getFieldsList(query) {
-  if (query.Model.children.length) {
-    const adaptor = query.adaptors.find(adaptor => adaptor.name === 'Children');
-    return adaptor.getFieldsList();
-  }
-  if (query.Model.Parent) {
-    const adaptor = query.adaptors.find(adaptor => adaptor.name === 'Parent');
-    return adaptor.getFieldsList();
-  }
-
-  return new adaptors.Default(query).getFieldsList();
+  return query.adaptors.reduce((fieldsList, adaptor) => {
+    const adaptorFields = adaptor.getFieldsList();
+    adaptorFields.forEach(adaptorField => {
+      const isFieldInList = !!fieldsList.find(field => field === adaptorField);
+      if (!isFieldInList) {
+        fieldsList.push(adaptorField);
+      }
+    });
+    return fieldsList;
+  }, new adaptors.Default(query).getFieldsList());
 }
 
 function getTableModel(query, tableName, discriminator) {

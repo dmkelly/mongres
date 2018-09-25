@@ -2,7 +2,7 @@ const _ = require('lodash');
 const error = require('./error');
 
 function castError(err) {
-  if (isConflictError(err)) {
+  if (error.isConflictError(err)) {
     return new error.ConflictError(err);
   }
   return err;
@@ -31,10 +31,6 @@ async function invokeSeries(fns) {
   }
 }
 
-function isConflictError(err) {
-  return err.code === '23505';
-}
-
 function mapToLookup(array) {
   return array.map(field => {
     const obj = {};
@@ -58,15 +54,18 @@ function template(text, substitutions) {
 }
 
 module.exports = {
+  castArray: _.castArray,
   castError,
   cloneDeep: _.cloneDeep,
+  deepEquals: _.isEqual,
   escapeRegExp,
+  get: _.get,
   getRelationTableName,
   groupBy: _.groupBy,
   invoke,
   invokeSeries,
-  isConflictError,
   isDate: _.isDate,
+  isEmpty: _.isEmpty,
   isFunction: _.isFunction,
   isNil: _.isNil,
   isNumber: _.isNumber,

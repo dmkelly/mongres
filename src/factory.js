@@ -2,13 +2,7 @@ const Field = require('./field');
 const Model = require('./model');
 const statics = require('./statics');
 const Types = require('./types');
-const {
-  cloneDeep,
-  isUndefined,
-  isFunction,
-  isNil,
-  sanitizeName
-} = require('./utils');
+const { isFunction, isNil, sanitizeName } = require('./utils');
 
 function extractDefaults(fields) {
   return Object.entries(fields).reduce((defaults, [fieldName, field]) => {
@@ -115,13 +109,13 @@ function attachProperties(Model, instance, schema) {
           }
 
           const cleaned = field.cast(value);
-          if (!isUndefined(cleaned)) {
-            if (modifier && modifier.setter) {
-              this.data[fieldName] = modifier.setter.call(this, cleaned);
-              return;
-            }
-            this.data[fieldName] = cleaned;
+          const newValue = isNil(cleaned) ? null : cleaned;
+
+          if (modifier && modifier.setter) {
+            this.data[fieldName] = modifier.setter.call(this, newValue);
+            return;
           }
+          this.data[fieldName] = newValue;
         }
       });
     }

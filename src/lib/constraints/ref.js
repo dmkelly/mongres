@@ -27,8 +27,10 @@ function createBasic(table, Model, field, Ref) {
     .foreign(field.columnName)
     .references(`${field.refTableName}.id`);
 
-  if (isNested || field.cascade) {
+  if (isNested || field.cascade || field.required) {
     operation = operation.onDelete('CASCADE').onUpdate('CASCADE');
+  } else {
+    operation = operation.onDelete('SET NULL').onUpdate('CASCADE');
   }
 
   return operation;

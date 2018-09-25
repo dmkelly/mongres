@@ -2,7 +2,7 @@ const { isNil, isObject } = require('../utils');
 const Type = require('./type');
 
 class String extends Type {
-  constructor(size) {
+  constructor(size = 255) {
     super();
     this.dataType = 'string';
     this.size = size;

@@ -9,7 +9,8 @@ async function dropTables() {
   const tableRows = await client.raw(tableQuery);
 
   const tables = tableRows.rows.map(row => row.tablename);
-  const dropQuery = `DROP TABLE IF EXISTS ${tables.join(',')} CASCADE`;
+  const tableList = tables.map(table => `"${table}"`).join(',');
+  const dropQuery = `DROP TABLE IF EXISTS ${tableList} CASCADE`;
   await client.raw(dropQuery);
   await client.destroy();
 }

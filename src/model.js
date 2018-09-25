@@ -1,16 +1,18 @@
+const { isConflictError, ConflictError } = require('./error');
 const Schema = require('./schema');
 const {
   cloneDeep,
   getRelationTableName,
   invoke,
   invokeSeries,
-  isConflictError,
+  isFunction,
+  isNil,
   isUndefined
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
-async function invokeMiddleware(document, hook, middleware, isBlocking) {
-  const fns = middleware.map(mid => () => mid.execute(hook, document));
+async function invokeMiddleware(document, hook, middleware, isBlocking, tx) {
+  const fns = middleware.map(mid => () => mid.execute(hook, document, tx));
   if (isBlocking) {
     return await invokeSeries(fns);
   }
@@ -100,18 +102,17 @@ class Model {
   toObject() {
     return Object.values(this.schema.fields).reduce((data, field) => {
       const fieldName = field.fieldName;
-      if (field.isMulti) {
-        data[fieldName] = this[fieldName].map(item => {
-          if (item instanceof Model) {
-            return item.toObject();
-          }
-          return item;
-        });
+      if (Array.isArray(this[fieldName])) {
+        data[fieldName] = Array.from(
+          this[fieldName].map(item => {
+            return isFunction(item.toObject) ? item.toObject() : item;
+          })
+        );
       } else {
         const value = this[fieldName];
         if (value instanceof Model) {
           data[fieldName] = value.toObject();
-        } else if (!isUndefined(value)) {
+        } else if (!isNil(value)) {
           data[fieldName] = value;
         }
       }
@@ -180,12 +181,45 @@ class Model {
   async populate(fieldName) {
     const field = this.schema.fields[fieldName];
     if (!field || !field.ref) {
+      throw await new Error(
+        `Field ${field.fieldName} does not support populate`
+      );
+    }
+
+    if (isNil(this[field.fieldName])) {
       return await this;
     }
 
     const Ref = this.instance.model(field.ref);
     if (!Ref) {
       return await this;
+    }
+
+    if (field.isMulti) {
+      const [backRefField] = getBackRefFields(this.constructor, Ref.schema);
+
+      if (backRefField && !backRefField.isMulti) {
+        const records = await Ref.find({
+          [backRefField.columnName]: this.id
+        });
+        this[fieldName] = records;
+
+        return this;
+      }
+
+      const joinTable = getRelationTableName([this.constructor, Ref]);
+      const records = await Ref.find().where((builder, knex) => {
+        const subquery = knex
+          .table(joinTable)
+          .where(this.constructor.tableName, this.id)
+          .select(Ref.tableName);
+
+        builder.where('id', 'in', subquery);
+      });
+
+      this[fieldName] = records;
+
+      return this;
     }
 
     const record = await Ref.findById(this[fieldName]);
@@ -200,12 +234,12 @@ class Model {
     const hook = 'remove';
 
     if (!skipMiddleware) {
-      await invokeMiddleware(this, hook, pre, true);
+      await invokeMiddleware(this, hook, pre, true, transaction);
     }
 
     if (this.isNew && isUndefined(this.id)) {
       if (!skipMiddleware) {
-        invokeMiddleware(this, hook, post, false);
+        invokeMiddleware(this, hook, post, true, transaction);
       }
       return await null;
     }
@@ -218,7 +252,7 @@ class Model {
     );
 
     if (!skipMiddleware) {
-      invokeMiddleware(this, hook, post, false);
+      invokeMiddleware(this, hook, post, true, transaction);
     }
 
     return null;
@@ -227,10 +261,15 @@ class Model {
   async save({ transaction, skipMiddleware } = {}) {
     const { pre, post } = this.schema.middleware;
     const hook = 'save';
+    const isCreating = this.isNew;
 
     await this.validate({ skipMiddleware });
+
     if (!skipMiddleware) {
-      await invokeMiddleware(this, hook, pre, true);
+      if (isCreating) {
+        await invokeMiddleware(this, 'create', pre, true, transaction);
+      }
+      await invokeMiddleware(this, hook, pre, true, transaction);
     }
 
     const client = this.instance.client;
@@ -239,16 +278,26 @@ class Model {
       this[this.Parent.tableName] = this.id;
     }
 
-    if (transaction) {
-      await upsert(transaction, this);
-    } else {
-      await client.transaction(trx => upsert(trx, this));
+    try {
+      if (transaction) {
+        await upsert(transaction, this);
+      } else {
+        await client.transaction(trx => upsert(trx, this));
+      }
+    } catch (err) {
+      if (isConflictError(err)) {
+        throw new ConflictError(err);
+      }
+      throw err;
     }
 
     this.originalData = cloneDeep(this.data);
 
     if (!skipMiddleware) {
-      invokeMiddleware(this, hook, post, false);
+      if (isCreating) {
+        await invokeMiddleware(this, 'create', post, true, transaction);
+      }
+      await invokeMiddleware(this, hook, post, true, transaction);
     }
 
     return this;

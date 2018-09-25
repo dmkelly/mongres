@@ -1,5 +1,6 @@
 const { isFunction, isString, sanitizeName } = require('./utils');
 const { getRef, validateField } = require('./lib/field');
+const ModelList = require('./lib/modelList');
 const { ValidationError } = require('./error');
 
 class Field {
@@ -8,11 +9,13 @@ class Field {
     this.fieldName = fieldName;
     this.columnName = fieldName;
     this.definition = definition;
+    this.autoPopulate = false;
 
     this.ref = definition.ref;
     if (this.ref) {
       this.refTableName = sanitizeName(this.ref);
       this.cascade = !!definition.cascade;
+      this.autoPopulate = !!definition.autoPopulate;
     }
 
     this.enum = definition.enum
@@ -67,17 +70,24 @@ class Field {
       return this.type.cast(value);
     }
 
+    const Model = this.type;
+
     if (!Array.isArray(value)) {
-      return [];
+      return ModelList.factory(Model);
     }
 
-    const Model = this.type;
-    return value.map(item => {
+    if (value instanceof ModelList) {
+      return value;
+    }
+
+    const items = value.map(item => {
       if (item instanceof Model) {
         return item;
       }
       return new Model(Model.schema.cast(item));
     });
+
+    return ModelList.factory(Model, ...items);
   }
 
   getConstraints() {

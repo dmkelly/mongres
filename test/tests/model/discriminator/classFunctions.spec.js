@@ -43,8 +43,6 @@ describe('model/discriminator/classFunctions', () => {
         }
       })
     );
-
-    await mongres.connect(helpers.connectionInfo);
   });
 
   afterEach(() => {
@@ -52,6 +50,10 @@ describe('model/discriminator/classFunctions', () => {
   });
 
   describe('#create()', () => {
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+    });
+
     it('Inserts a new record in both the base and child tables', async () => {
       await Rectangle.create({
         area: 6,
@@ -132,10 +134,26 @@ describe('model/discriminator/classFunctions', () => {
   });
 
   describe('#find()', () => {
+    let Sheet;
     let rect1;
     let circle1;
 
     beforeEach(async () => {
+      Sheet = mongres.model(
+        'Sheet',
+        new Schema({
+          name: {
+            type: Schema.Types.String()
+          },
+          rectangle: {
+            type: Schema.Types.Integer(),
+            ref: 'Rectangle'
+          }
+        })
+      );
+
+      await mongres.connect(helpers.connectionInfo);
+
       rect1 = await new Rectangle({
         height: 5,
         width: 1,
@@ -238,11 +256,34 @@ describe('model/discriminator/classFunctions', () => {
       expect(foundCircle1.area).to.equal(40);
       expect(foundCircle1.diameter).to.equal(6);
     });
+
+    describe('Populated discriminators', () => {
+      let sheet1;
+
+      beforeEach(async () => {
+        sheet1 = await new Sheet({
+          name: 'test sheet',
+          rectangle: rect1.id
+        }).save();
+      });
+
+      it('Casts populated refs to discriminator type', async () => {
+        const results = await Sheet.find({
+          id: sheet1.id
+        }).populate('rectangle');
+        expect(results.length).to.equal(1);
+        expect(results[0].id).to.equal(sheet1.id);
+        expect(results[0].rectangle).to.be.instanceof(Rectangle);
+        expect(results[0].rectangle.toObject()).to.deep.equal(rect1.toObject());
+      });
+    });
   });
 
   describe('#findOne()', () => {
-    beforeEach(() => {
-      return Promise.all([
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+
+      await Promise.all([
         new Rectangle({
           height: 5,
           width: 2,
@@ -302,6 +343,8 @@ describe('model/discriminator/classFunctions', () => {
     let rectangleB;
 
     beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+
       rectangleA = await new Rectangle({
         height: 5,
         width: 2,
@@ -340,8 +383,10 @@ describe('model/discriminator/classFunctions', () => {
   });
 
   describe('#remove()', () => {
-    beforeEach(() => {
-      return Promise.all([
+    beforeEach(async () => {
+      await mongres.connect(helpers.connectionInfo);
+
+      await Promise.all([
         new Rectangle({
           height: 5,
           width: 1,
@@ -361,9 +406,9 @@ describe('model/discriminator/classFunctions', () => {
 
     it('Can remove multiple items at once', async () => {
       await Rectangle.remove({});
-      const rectangleCount = await helpers.query.count(Rectangle.tableName);
+      const rectangleCount = await Rectangle.count();
       expect(rectangleCount).to.equal(0);
-      const parentCount = await helpers.query.count(Shape.tableName);
+      const parentCount = await Shape.count();
       expect(parentCount).to.equal(1);
     });
 
@@ -371,7 +416,7 @@ describe('model/discriminator/classFunctions', () => {
       await Rectangle.remove({
         height: 10
       });
-      const count = await helpers.query.count(Rectangle.tableName);
+      const count = await Rectangle.count();
       expect(count).to.equal(1);
 
       const removedItem = await Rectangle.findOne({
@@ -389,7 +434,7 @@ describe('model/discriminator/classFunctions', () => {
       await Rectangle.remove({
         area: 40
       });
-      const count = await helpers.query.count(Rectangle.tableName);
+      const count = await Rectangle.count();
       expect(count).to.equal(1);
 
       const removedItem = await Rectangle.findOne({
@@ -402,8 +447,16 @@ describe('model/discriminator/classFunctions', () => {
       });
       expect(remainingItem).to.be.ok;
 
-      const circleCount = await helpers.query.count(Circle.tableName);
+      const circleCount = await Circle.count();
       expect(circleCount).to.equal(1);
+    });
+
+    it('Supports query syntax', async () => {
+      await Rectangle.remove({
+        height: {
+          $in: [40]
+        }
+      });
     });
   });
 });
