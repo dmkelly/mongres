@@ -3,13 +3,11 @@ const Schema = require('./schema');
 const {
   cloneDeep,
   getRelationTableName,
-  groupBy,
   invoke,
   invokeSeries,
   isFunction,
   isNil,
-  isUndefined,
-  keyBy
+  isUndefined
 } = require('./utils');
 const { getBackRefFields, serialize } = require('./lib/model');
 
