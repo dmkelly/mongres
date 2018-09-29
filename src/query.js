@@ -30,6 +30,11 @@ class Query {
     }
 
     this.client = this.Model.instance.client;
+
+    if (!this.client) {
+      throw new Error('No database client found, check active connection');
+    }
+
     this.fields = null;
     this.isCount = false;
 
