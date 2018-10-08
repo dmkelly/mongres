@@ -145,6 +145,15 @@ describe('model/classFunctions', () => {
       expect(results.length).to.equal(1);
     });
 
+    it('Supports $ filters', async () => {
+      const results = await Widget.find({
+        height: {
+          $in: [5]
+        }
+      });
+      expect(results.length).to.equal(1);
+    });
+
     it('Handles empty result sets', async () => {
       const results = await Widget.find({
         height: 2
