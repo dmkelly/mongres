@@ -274,6 +274,10 @@ class Model {
 
     const client = this.instance.client;
 
+    if (!client) {
+      throw new Error('No database client found, check active connection');
+    }
+
     if (this.Parent) {
       this[this.Parent.tableName] = this.id;
     }
