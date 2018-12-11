@@ -107,6 +107,22 @@ class Field {
     return constraints;
   }
 
+  migrateAdd(knex, Model) {
+    return knex.schema
+      .withSchema(this.schema.instance.namespace)
+      .table(Model.tableName, table => {
+        this.type.defineColumn(table, this.columnName);
+      });
+  }
+
+  migrateRemove(knex, Model) {
+    return knex.schema
+      .withSchema(this.schema.instance.namespace)
+      .table(Model.tableName, table => {
+        table.dropColumn(this.columnName);
+      });
+  }
+
   validate(value) {
     if (!this.isMulti) {
       const Ref = getRef(this);
