@@ -7,8 +7,8 @@ class Index extends Constraint {
     const indexes = await getIndexes(instance, tableName);
     const index = indexes.find(index => {
       return (
-        index.table_name === tableName &&
-        index.column_name === this.field.columnName
+        index.table_name.toLowerCase() === tableName.toLowerCase() &&
+        index.column_name.toLowerCase() === this.field.columnName.toLowerCase()
       );
     });
 

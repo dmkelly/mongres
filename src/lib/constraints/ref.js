@@ -10,8 +10,8 @@ async function existsBasic(Model, field) {
   const foreignKey = constraints.find(c => {
     return (
       c.constraint_type === 'FOREIGN KEY' &&
-      c.table_name === Model.tableName &&
-      c.constraint_name === constraintName
+      c.table_name.toLowerCase() === Model.tableName.toLowerCase() &&
+      c.constraint_name.toLowerCase() === constraintName.toLowerCase()
     );
   });
 

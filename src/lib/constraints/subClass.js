@@ -14,8 +14,8 @@ async function hasForeignKey(Model, columnName) {
   const foreignKey = constraints.find(c => {
     return (
       c.constraint_type === 'FOREIGN KEY' &&
-      c.table_name === Model.tableName &&
-      c.constraint_name === name
+      c.table_name.toLowerCase() === Model.tableName.toLowerCase() &&
+      c.constraint_name.toLowerCase() === name.toLowerCase()
     );
   });
 

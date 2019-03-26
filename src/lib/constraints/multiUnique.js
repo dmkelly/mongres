@@ -11,8 +11,8 @@ class MultiUnique extends MultiField {
     const constraint = constraints.find(c => {
       return (
         c.constraint_type === 'UNIQUE' &&
-        c.table_name === tableName &&
-        c.constraint_name === name
+        c.table_name.toLowerCase() === tableName.toLowerCase() &&
+        c.constraint_name.toLowerCase() === name.toLowerCase()
       );
     });
 

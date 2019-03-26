@@ -99,5 +99,22 @@ describe('Schema', () => {
       expect(unique.table_name).to.equal(Point.tableName);
       expect(unique.constraint_type).to.equal('UNIQUE');
     });
+
+    it('Is idempotent', async () => {
+      pointSchema.index(['x', 'y']);
+      const Point = mongres.model('Point', pointSchema);
+      await mongres.connect(helpers.connectionInfo);
+      await mongres.disconnect();
+      await mongres.connect(helpers.connectionInfo);
+      const indexes = await helpers.table.getIndexes(Point.tableName);
+      const indexName = `${Point.tableName}_x_y_index`;
+      const multiIndexes = indexes.filter(i => i.index_name === indexName);
+      const xIndex = multiIndexes.find(i => i.column_name === 'x');
+      const yIndex = multiIndexes.find(i => i.column_name === 'y');
+
+      expect(multiIndexes.length).to.equal(2);
+      expect(xIndex).to.be.ok;
+      expect(yIndex).to.be.ok;
+    });
   });
 });
