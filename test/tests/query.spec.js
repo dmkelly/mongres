@@ -315,5 +315,14 @@ describe('Query', () => {
       expect(records.length).to.equal(1);
       expect(records[0].toObject()).to.deep.equal(plotB.toObject());
     });
+
+    it('Supports subqueries', async () => {
+      const records = await Plot.find().where({
+        c: {
+          $in: Value.find({ a: 1 }).columns(['a'])
+        }
+      });
+      expect(records.length).to.equal(2);
+    });
   });
 });

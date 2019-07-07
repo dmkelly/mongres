@@ -69,7 +69,9 @@ function getWhereBuilder(query, namespacedColumn, filter) {
     Object.entries(filter).forEach(([key, value]) => {
       const filterFn = filterMap[key];
       if (filterFn) {
-        filterFn(builder, namespacedColumn, value);
+        // If a query is passed in as a subquery, use the raw knex query
+        const valueClause = value.query ? value.query : value;
+        filterFn(builder, namespacedColumn, valueClause);
       }
     });
   };
