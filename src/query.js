@@ -151,6 +151,8 @@ class Query {
     }
 
     const schema = this.Model.schema;
+
+    const orFilters = filters.$or;
     filters = pick(filters, Object.keys(schema.fields));
 
     this.query = Object.entries(filters).reduce(
@@ -161,6 +163,22 @@ class Query {
       },
       this.query
     );
+
+    if (Array.isArray(orFilters)) {
+      this.query = this.query.andWhere(builder => {
+        orFilters.forEach(filterGroup => {
+          Object.entries(filterGroup).forEach(([fieldName, filter], index) => {
+            const field = schema.fields[fieldName];
+            const columnName = ensureColumnNamespace(this, field);
+            const clause = index === 0 ? 'orWhere' : 'where';
+
+            builder = builder[clause](
+              getWhereBuilder(this, columnName, filter)
+            );
+          });
+        });
+      });
+    }
 
     return this;
   }

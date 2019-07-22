@@ -49,6 +49,12 @@ describe('Query', () => {
       a: 1
     });
 
+    // Plot
+    // index  a b c
+    // 0      1 x 1
+    // 1      2 2 1
+    // 2      3 1 null
+
     await Plot.create({
       a: 1,
       b: joinedValue.id,
@@ -323,6 +329,21 @@ describe('Query', () => {
         }
       });
       expect(records.length).to.equal(2);
+    });
+
+    it('Supports $or', async () => {
+      const records = await Plot.find().where({
+        $or: [{ a: 1 }, { c: 1 }]
+      });
+      expect(records.length).to.equal(2);
+    });
+
+    it('Supports $or with other filters', async () => {
+      const records = await Plot.find().where({
+        b: 2,
+        $or: [{ a: 1 }, { c: 1 }]
+      });
+      expect(records.length).to.equal(1);
     });
   });
 });
