@@ -31,6 +31,10 @@ module.exports = {
   },
 
   $ne: (builder, fieldName, value) => {
+    if (value === null) {
+      return builder.whereNotNull(fieldName);
+    }
+
     return builder.whereNot(fieldName, value);
   },
 

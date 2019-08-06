@@ -345,5 +345,22 @@ describe('Query', () => {
       });
       expect(records.length).to.equal(1);
     });
+
+    it('Supports is null', async () => {
+      const records = await Plot.find().where({
+        c: null
+      });
+      expect(records.length).to.equal(1);
+      expect(records[0].a).to.equal(3);
+    });
+
+    it('Supports not null', async () => {
+      const records = await Plot.find().where({
+        c: {
+          $ne: null
+        }
+      });
+      expect(records.length).to.equal(2);
+    });
   });
 });

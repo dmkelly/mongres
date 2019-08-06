@@ -70,7 +70,11 @@ function getWhereBuilder(query, namespacedColumn, filter) {
       const filterFn = filterMap[key];
       if (filterFn) {
         // If a query is passed in as a subquery, use the raw knex query
-        const valueClause = value.query ? value.query : value;
+        let valueClause = value;
+        if (value && value.query) {
+          valueClause = value.query;
+        }
+
         filterFn(builder, namespacedColumn, valueClause);
       }
     });

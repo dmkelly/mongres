@@ -159,6 +159,11 @@ class Query {
       (query, [fieldName, filter]) => {
         const field = schema.fields[fieldName];
         const columnName = ensureColumnNamespace(this, field);
+
+        if (filter === null) {
+          return query.whereNull(columnName);
+        }
+
         return query.where(getWhereBuilder(this, columnName, filter));
       },
       this.query
