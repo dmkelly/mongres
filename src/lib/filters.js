@@ -22,6 +22,10 @@ module.exports = {
     return builder.whereIn(fieldName, value);
   },
 
+  $like: (builder, fieldName, value) => {
+    return builder.where(fieldName, 'like', value);
+  },
+
   $lt: (builder, fieldName, value) => {
     return builder.where(fieldName, '<', value);
   },

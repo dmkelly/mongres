@@ -5,6 +5,7 @@ describe('Query', () => {
   let mongres;
   let Plot;
   let Value;
+  let Person;
   let plotB;
 
   beforeEach(async () => {
@@ -33,6 +34,15 @@ describe('Query', () => {
       new Schema({
         a: {
           type: Schema.Types.Integer()
+        }
+      })
+    );
+
+    Person = mongres.model(
+      'Person',
+      new Schema({
+        name: {
+          type: Schema.Types.String()
         }
       })
     );
@@ -391,6 +401,34 @@ describe('Query', () => {
         ]
       });
       expect(records.length).to.equal(2);
+    });
+
+    describe('$like', () => {
+      beforeEach(async () => {
+        await Person.create({
+          name: 'Dave'
+        });
+        await Person.create({
+          name: 'Dan'
+        });
+        await Person.create({
+          name: 'Tim'
+        });
+        await Person.create({
+          name: 'Eric'
+        });
+      });
+
+      it('Finds documents matching a string', async () => {
+        const records = await Person.find().where({
+          name: {
+            $like: 'Da%'
+          }
+        });
+        expect(records.length).to.equal(2);
+        expect(records.find(r => r.name === 'Dave')).to.be.ok;
+        expect(records.find(r => r.name === 'Dan')).to.be.ok;
+      });
     });
   });
 });
