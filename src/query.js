@@ -175,7 +175,13 @@ class Query {
           Object.entries(filterGroup).forEach(([fieldName, filter], index) => {
             const field = schema.fields[fieldName];
             const columnName = ensureColumnNamespace(this, field);
-            const clause = index === 0 ? 'orWhere' : 'where';
+            let clause = index === 0 ? 'orWhere' : 'where';
+
+            if (filter === null) {
+              clause = `${clause}Null`;
+              builder = builder[clause](columnName);
+              return;
+            }
 
             builder = builder[clause](
               getWhereBuilder(this, columnName, filter)

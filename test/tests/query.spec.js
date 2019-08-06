@@ -362,5 +362,35 @@ describe('Query', () => {
       });
       expect(records.length).to.equal(2);
     });
+
+    it('Supports is null with $or', async () => {
+      const records = await Plot.find().where({
+        $or: [
+          {
+            c: null
+          },
+          {
+            c: 1
+          }
+        ]
+      });
+      expect(records.length).to.equal(3);
+    });
+
+    it('Supports is not null with $or', async () => {
+      const records = await Plot.find().where({
+        $or: [
+          {
+            c: {
+              $ne: null
+            }
+          },
+          {
+            c: 1
+          }
+        ]
+      });
+      expect(records.length).to.equal(2);
+    });
   });
 });
