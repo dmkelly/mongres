@@ -8,11 +8,13 @@ class Parent extends Adaptor {
 
     this.Model = Model || this.query.Model;
 
-    this.query.query = this.query.query.join(
-      this.Model.Parent.tableName,
-      `${this.Model.tableName}.id`,
-      `${this.Model.Parent.tableName}.id`
-    );
+    this.query.query = this.query.query
+      .rightJoin(
+        this.Model.Parent.tableName,
+        `${this.Model.tableName}.id`,
+        `${this.Model.Parent.tableName}.id`
+      )
+      .where(`${this.Model.Parent.tableName}.type`, this.Model.name);
   }
 
   ensureColumnNamespace(field, Model = this.Model) {
