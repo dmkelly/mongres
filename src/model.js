@@ -71,6 +71,8 @@ async function upsert(transaction, document) {
     if (result.nModified === 0) {
       await transaction.insert(data).into(document.Model.tableName);
     }
+
+    document.isNew = false;
   } else if (document.isNew) {
     document.id = await transaction
       .insert(data)
