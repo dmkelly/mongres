@@ -362,11 +362,11 @@ describe('model/discriminator/classFunctions', () => {
     });
 
     it('Finds the item by ID', async () => {
-      let resultA = await Rectangle.findById(rectangleA.id);
+      const resultA = await Rectangle.findById(rectangleA.id);
       expect(resultA.id).to.equal(rectangleA.id);
       expect(resultA.height).to.equal(rectangleA.height);
 
-      let resultB = await Rectangle.findById(rectangleB.id);
+      const resultB = await Rectangle.findById(rectangleB.id);
       expect(resultB.id).to.equal(rectangleB.id);
       expect(resultB.height).to.equal(rectangleB.height);
     });

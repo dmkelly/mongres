@@ -37,7 +37,16 @@ function findOne(Model) {
 
 function findById(Model) {
   return function findById(id) {
-    return findOne(Model)({ id });
+    let filters = { id };
+    if (Model.Parent) {
+      filters = builder => {
+        builder.where({
+          [`${Model.Parent.tableName}.id`]: id
+        });
+      };
+    }
+
+    return findOne(Model)(filters);
   };
 }
 

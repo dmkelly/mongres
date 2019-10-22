@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# PGPASSWORD=mongrespw psql --dbname=mongres_test --host=localhost --port=5432 --username=mongres
+
 dbuser="mongres"
 dbpassword="mongrespw"
 database="mongres_test"
