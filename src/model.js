@@ -58,7 +58,20 @@ async function upsert(transaction, document) {
   }
 
   const data = serialize(document, document.subSchema);
-  if (document.isNew) {
+
+  if (document.Parent) {
+    const result = await document.Model.update(
+      {
+        id: document.id
+      },
+      data,
+      { transaction }
+    );
+
+    if (result.nModified === 0) {
+      await transaction.insert(data).into(document.Model.tableName);
+    }
+  } else if (document.isNew) {
     document.id = await transaction
       .insert(data)
       .into(document.Model.tableName)
