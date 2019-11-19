@@ -39,6 +39,16 @@ class DateType extends Type {
     return table.timestamp(columnName);
   }
 
+  isEqual(value1, value2) {
+    if (value1 == null) {
+      return value2 == null;
+    }
+    if (value2 == null) {
+      return value1 == null;
+    }
+    return value1.getTime() === value2.getTime();
+  }
+
   isValid(value) {
     if (isNil(value)) {
       return true;

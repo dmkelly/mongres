@@ -62,4 +62,18 @@ describe('types/Date', () => {
       expect(field.isValid(new Date('asfafs'))).not.to.be.ok;
     });
   });
+
+  describe('#isEqual()', () => {
+    it('Handles nils', () => {
+      expect(field.isEqual(null, null)).to.be.ok;
+      expect(field.isEqual()).to.be.ok;
+      expect(field.isEqual(new Date())).not.to.be.ok;
+      expect(field.isEqual(null, new Date())).not.to.be.ok;
+    });
+
+    it('Handles dates', () => {
+      expect(field.isEqual(new Date(0), new Date(1))).not.to.be.ok;
+      expect(field.isEqual(new Date(5), new Date(5))).to.be.ok;
+    });
+  });
 });
